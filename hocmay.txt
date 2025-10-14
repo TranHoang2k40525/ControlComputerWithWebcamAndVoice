@@ -1,0 +1,30 @@
+┌───────────────────┐
+│   Webcam Input    │
+└─────────┬─────────┘
+          │ (1) Khung hình video
+┌─────────▼─────────┐
+│     MediaPipe     │   ← Huấn luyện/phát hiện keypoints bàn tay
+│   (21 landmarks)  │
+└─────────┬─────────┘
+          │ (2) Chuỗi keypoints [21*2]
+┌─────────▼─────────┐
+│  Buffer Keypoints │   ← Lưu N frame liên tiếp
+└─────────┬─────────┘
+          │ (3) Sequence length = N
+┌─────────▼─────────┐
+│     LSTM Model    │   ← Huấn luyện nhận diện cử chỉ động/tĩnh
+└─────────┬─────────┘
+          │ (4) Gesture label (vd: "vuốt lên")
+┌─────────▼─────────┐
+│   Action Mapping  │   ← Gán gesture → hành động (chuột, tab…)
+└─────────┬─────────┘
+          │ (5)
+┌─────────▼─────────┐
+│ pyautogui / OS API│   ← Thực thi: di chuột, click, phím tắt
+└───────────────────┘
+
+
+thư viện cài đặt:
+pip install pyautogui
+!pip install mediapipe tensorflow scikit-learn matplotlib seaborn opencv-python
+pip install mediapipe
