@@ -1,5 +1,6 @@
 # model.py - Load model và predict gesture (gộp config: LABEL_ENCODER, N_FRAMES, etc.)
 
+from ast import Import
 import os
 import numpy as np
 from tensorflow.keras.models import load_model
@@ -7,7 +8,7 @@ from tensorflow.keras.models import load_model
 MODEL_PATH = '../gesture_lstm_model.h5'
 N_FRAMES = 30
 FEATURES = 84
-CONF_THRESHOLD = 0.5
+CONF_THRESHOLD = 0.7
 
 LABEL_ENCODER = np.array([
     'clickchuotphai', 'clickchuottrai', 'dichuyenchuot', 'dungchuongtrinh',
@@ -16,8 +17,9 @@ LABEL_ENCODER = np.array([
 
 GESTURE_TYPES = {
     'dichuyenchuot': 'continuous', 
-    'vuotlen': 'discrete',
-    'vuotxuong': 'discrete',
+    # Treat vertical swipes as continuous so scrolling can be chained while gesture persists
+    'vuotlen': 'continuous',
+    'vuotxuong': 'continuous',
     'vuotphai': 'discrete',
     'vuottrai': 'discrete',
     'clickchuotphai': 'discrete',
@@ -29,9 +31,9 @@ GESTURE_TYPES = {
 }
 
 def load_gesture_model():
-    """
-    Load model và label encoder.
-    Returns: model, label_encoder
+    """Tải model và label encoder.
+
+    Trả về: model, label_encoder
     """
     if not os.path.exists(MODEL_PATH):
         print(f"Không tìm model tại {MODEL_PATH}!")
@@ -42,9 +44,9 @@ def load_gesture_model():
     return model, LABEL_ENCODER
 
 def predict_gesture(model, label_encoder, sequence_buffer):
-    """
-    Predict gesture từ sequence buffer.
-    Returns: gesture_label (str), confidence (float), pred_label (str), gesture_type (str)
+    """Dự đoán gesture từ bộ đệm sequence.
+
+    Trả về: gesture_label (str), confidence (float), pred_label (str), gesture_type (str)
     """
     if len(sequence_buffer) != N_FRAMES:
         return "Chờ buffer...", 0.0, "No action", "discrete"
@@ -65,3 +67,5 @@ def predict_gesture(model, label_encoder, sequence_buffer):
         gesture_type = "discrete"
     
     return gesture_label, confidence, pred_label, gesture_type
+
+

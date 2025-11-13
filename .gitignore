@@ -2,3 +2,7 @@
 /Dataset/**
 dataset/
 *.h5
+/vosk-model-small-en-us-0.15
+/vosk-model-vn-0.4
+/vosk-model-small-en-us-0.15.zip
+/vosk-model-vn-0.4.zip

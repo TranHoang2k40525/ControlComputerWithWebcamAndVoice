@@ -1,0 +1,9 @@
+npx expo start --tunnel // cho phép chạy expo mà không cần cùng mạng.
+npx expo-doctor --verbose // kiểm tra xem có lỗi gì không ở app.js
+eas build -p android // build xuất file aab.
+eas build -p android --profile preview
+# HOẶC
+eas build -p android --profile development // xuất apk.
+eas build:configure // fix lỗi eas build:configure
+>netsh advfirewall firewall add rule name="Allow Ngrok Port 5297" dir=in action=allow protocol=TCP localport=5297 // cho phép cong 5297 hoạt động( đổi 5297 nếu là cổng khác).
+cloudflared tunnel --url http://localhost:5297// nếu ngrok ko dùng đc thì dùng cái này.
