@@ -1,4 +1,4 @@
-# Hệ Thống Điều Khiển Máy Tính Bằng Cử Chỉ Tay
+# Hệ Thống Điều Khiển Máy Tính Bằng Cử Chỉ Tay Kết Hợp Giọng Nói
 
 ## Tổng Quan
 
