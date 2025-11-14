@@ -43,7 +43,9 @@ def execute_open_app():
     """Mở app, không dừng chương trình."""
     
     pyautogui.hotkey('win', 'r')
-    pyautogui.write('C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Coc Coc.lnk')
+    # 2. Chờ hộp thoại Run xuất hiện (rất quan trọng)
+    time.sleep(0.5)
+    pyautogui.write('"C:\Users\Public\Desktop\Cốc Cốc.lnk"')
     pyautogui.press('enter')
     print("Executed: Mở Coc Coc!")
     return False  # Không dừng chương trình
