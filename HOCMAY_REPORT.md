@@ -4,6 +4,65 @@
 
 **Sơ Đồ Hoạt Động (Tóm tắt)**
 
+**Sơ Đồ (ASCII)**
+
+```
+┌───────────────────┐
+│   Webcam Input    │
+└─────────┬─────────┘
+          │ (1) Khung hình video
+┌─────────▼─────────┐
+│     MediaPipe     │   ← Huấn luyện/phát hiện keypoints bàn tay
+│   (21 landmarks)  │
+└─────────┬─────────┘
+          │ (2) Chuỗi keypoints [21*2]
+┌─────────▼─────────┐
+│  Buffer Keypoints │   ← Lưu N frame liên tiếp
+└─────────┬─────────┘
+          │ (3) Sequence length = N
+┌─────────▼─────────┐
+│     LSTM Model    │   ← Huấn luyện nhận diện cử chỉ động/tĩnh
+└─────────┬─────────┘
+          │ (4) Gesture label (vd: "vuốt lên")
+┌─────────▼─────────┐
+│   Action Mapping  │   ← Gán gesture → hành động (chuột, tab…)
+└─────────┬─────────┘
+          │ (5)
+┌─────────▼─────────┐
+│ pyautogui / OS API│   ← Thực thi: di chuột, click, phím tắt
+└───────────────────┘
+
+Sơ đồ hoạt động cho điều khiển máy tính bằng giọng nói(tích hợp Google Speech + mô hình LSTM)
+
+Tổng quát
+┌───────────────────────┐
+│   Microphone Input    │
+└──────────┬──────────┘
+           │ (1) Dữ liệu âm thanh
+┌──────────▼──────────┐
+│ Google Speech-to-Text │   ← Chuyển âm thanh -> Văn bản thô
+└──────────┬──────────┘
+           │ (2) Văn bản thô (vd: "cu li phóng to 5 lần")
+┌──────────▼──────────┐
+│   Wake Word Filter   │   ← Lọc, chỉ nhận văn bản sau khi có "cu li"
+└──────────┬──────────┘
+           │ (3) Lệnh đã kích hoạt (vd: "phóng to 5 lần")
+┌──────────▼──────────┐
+│      LSTM Model      │   ← Huấn luyện (11 lớp) để phân loại Ý định (Intent)
+│ (Intent Classifier) │
+└──────────┬──────────┘
+           │ (4) Intent (vd: "phongto") + Lệnh gốc (để xử lý sau)
+┌──────────▼──────────┐
+│  Router & Code    │   ← Gán Intent -> Hàm. Dùng Code (Regex/List)
+│  (Action Mapping)    │      để trích xuất Tham số (vd: 5, "chrome")
+└──────────┬──────────┘
+           │ (5) Hành động + Tham số (vd: "phongto", loops=5)
+┌──────────▼──────────┐
+│ pyautogui / OS API  │   ← Thực thi: gõ phím, click, mở app (Win+R)...
+└─────────────────────┘
+```
+
+
 - **Webcam → Điều khiển bằng cử chỉ**
   - **Input**: Webcam (khung hình video)
   - **Bước 1 (MediaPipe)**: Phát hiện 21 keypoints bàn tay cho mỗi khung hình.
