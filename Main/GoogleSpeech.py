@@ -99,7 +99,7 @@ def main():
                     elif any(w in cmd for w in CMD_CLICK):
                         print_status(f"[Log] Detect CLICK command: '{cmd}' (No Action)")
 
-                    # D. Kiểm tra Lệnh Tab (Placeholder)
+                    # D. Kiểm tra Lệnh Tab (Placeholder) //Cộng hòa xã hội chủ nghĩa việt nam
                     elif any(w in cmd for w in CMD_TAB):
                         print_status(f"[Log] Detect TAB command: '{cmd}' (No Action)")
 
