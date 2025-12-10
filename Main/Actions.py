@@ -41,13 +41,34 @@ def execute_stop_program():
 
 def execute_open_app():
     """Mở app, không dừng chương trình."""
+    import subprocess
+    import os
     
-    pyautogui.hotkey('win', 'r')
-    # 2. Chờ hộp thoại Run xuất hiện (rất quan trọng)
-    time.sleep(0.5)
-    pyautogui.write('"C:\Users\Public\Desktop\Cốc Cốc.lnk"')
-    pyautogui.press('enter')
-    print("Executed: Mở Coc Coc!")
+    # Đường dẫn đến Cốc Cốc (hỗ trợ tiếng Việt)
+    app_paths = [
+        r'C:\Users\Public\Desktop\Cốc Cốc.lnk',
+        r'C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Cốc Cốc\Cốc Cốc.lnk',
+        r'C:\Program Files (x86)\CocCoc\Browser\Application\browser.exe',
+        r'C:\Program Files\CocCoc\Browser\Application\browser.exe'
+    ]
+    
+    # Tìm đường dẫn tồn tại
+    app_path = None
+    for path in app_paths:
+        if os.path.exists(path):
+            app_path = path
+            break
+    
+    if app_path:
+        try:
+            # Dùng subprocess để mở (hỗ trợ Unicode tốt hơn)
+            subprocess.Popen(['cmd', '/c', 'start', '', app_path], shell=True)
+            print(f"Executed: Mở Coc Coc từ {app_path}")
+        except Exception as e:
+            print(f"Executed: Lỗi mở Coc Coc - {e}")
+    else:
+        print("Executed: Không tìm thấy Cốc Cốc!")
+    
     return False  # Không dừng chương trình
 
 def execute_zoom_in():
@@ -70,6 +91,39 @@ def execute_tab_prev():
     """Chuyển tab trước đó (Ctrl+Shift+Tab)."""
     pyautogui.hotkey('ctrl', 'shift', 'tab')
     print("Executed: Tab prev (Ctrl+Shift+Tab)")
+    return False
+
+def execute_type_text(text_content=None):
+    """Nhập văn bản bằng cách paste.
+    
+    Args:
+        text_content: Nội dung văn bản cần nhập. Nếu None, trả về False để báo hiệu
+                      cần thu thập nội dung từ voice input.
+    """
+    if text_content is None:
+        # Signal that we need to collect voice input for typing
+        return False
+    
+    if not text_content:
+        print("Executed: Type text - No content provided")
+        return False
+    
+    # Format: Viết hoa chữ cái đầu tiên
+    formatted_text = text_content[0].upper() + text_content[1:] if len(text_content) > 1 else text_content.upper()
+    
+    try:
+        import pyperclip
+        pyperclip.copy(formatted_text)
+        time.sleep(0.1)
+        pyautogui.hotkey('ctrl', 'v')
+        print(f"Executed: Type text - '{formatted_text}'")
+    except ImportError:
+        # Fallback: dùng pyautogui.write nếu không có pyperclip
+        pyautogui.write(formatted_text)
+        print(f"Executed: Type text (fallback) - '{formatted_text}'")
+    except Exception as e:
+        print(f"Executed: Type text - Error: {e}")
+    
     return False
 
 def execute_scroll_up():
@@ -436,7 +490,8 @@ def get_action_func(pred_label):
         'vuotlen': execute_scroll_up,
         'vuotxuong': execute_scroll_down,
         'vuotphai': execute_tab_next,
-        'vuottrai': execute_tab_prev
+        'vuottrai': execute_tab_prev,
+        'nhapvanban': execute_type_text
     }
     return action_map.get(pred_label)
 
