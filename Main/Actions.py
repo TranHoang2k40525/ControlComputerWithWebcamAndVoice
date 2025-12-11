@@ -1,12 +1,29 @@
 # actions.py - Các hàm thực thi hành động (gộp cấu hình: SCROLL_AMOUNT, SMOOTH_ALPHA, v.v.)
 
 import pyautogui
+import pyperclip
 import time
 import math
 import cv2
 import numpy as np
 import datetime
 import threading
+import subprocess
+import os
+# Callback function để log vào Voice GUI (sẽ được set từ Main.py)
+_voice_log_callback = None
+
+def set_voice_log_callback(callback):
+    """Đăng ký callback function để log vào Voice GUI."""
+    global _voice_log_callback
+    _voice_log_callback = callback
+
+def log_action(msg, show_in_gui=True):
+    """Log hành động - hiển thị cả terminal và GUI."""
+    print(msg, flush=True)  # flush=True để hiển thị ngay không buffer
+    if show_in_gui and _voice_log_callback:
+        _voice_log_callback(msg)
+
 # Gộp config actions
 SMOOTH_ALPHA = 0.6  # Tăng lên để phản hồi nhanh hơn (40% mới, 60% cũ)
 DISCRETE_COOLDOWN = 1.0
@@ -27,70 +44,232 @@ last_execution_times = {}
 
 def execute_right_click():
     pyautogui.rightClick()
-    print("Executed: Right click!")
+    log_action("✓ Thực thi: Click chuột phải")
     return False  # Không dừng chương trình
 
 def execute_left_click():
     pyautogui.leftClick()
-    print("Executed: Left click!")
+    log_action("✓ Thực thi: Click chuột trái")
     return False  # Không dừng chương trình
 
 def execute_stop_program():
-    print("Executed: Dừng chương trình! (Thoát)")
+    log_action("! Dừng chương trình - Thoát hệ thống")
     return False  # Dừng chương trình
 
-def execute_open_app():
-    """Mở app, không dừng chương trình."""
-    import subprocess
-    import os
+# Cấu hình ứng dụng và website
+APP_DATABASE = {
+    # Browsers
+    'chrome': {
+        'display_name': 'Google Chrome',
+        'paths': [
+            r'C:\Program Files\Google\Chrome\Application\chrome.exe',
+            r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
+        ],
+        'keywords': ['chrome', 'trình duyệt chrome', 'google chrome']
+    },
+    'coccoc': {
+        'display_name': 'Cốc Cốc Browser',
+        'paths': [
+            r'C:\Users\Public\Desktop\Cốc Cốc.lnk',
+            r'C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Cốc Cốc\Cốc Cốc.lnk',
+            r'C:\Program Files (x86)\CocCoc\Browser\Application\browser.exe',
+            r'C:\Program Files\CocCoc\Browser\Application\browser.exe'
+        ],
+        'keywords': ['cốc cốc', 'coc coc', 'trình duyệt']
+    },
+    # Development Tools
+    'vscode': {
+        'display_name': 'Visual Studio Code',
+        'paths': [
+            r'C:\Users\{}\AppData\Local\Programs\Microsoft VS Code\Code.exe',
+            r'C:\Program Files\Microsoft VS Code\Code.exe',
+            r'C:\Program Files (x86)\Microsoft VS Code\Code.exe'
+        ],
+        'keywords': ['visual studio code', 'vscode', 'vs code', 'code']
+    },
+    # Microsoft Office
+    'word': {
+        'display_name': 'Microsoft Word',
+        'paths': [
+            r'C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE',
+            r'C:\Program Files (x86)\Microsoft Office\root\Office16\WINWORD.EXE',
+            r'C:\Program Files\Microsoft Office\Office16\WINWORD.EXE'
+        ],
+        'keywords': ['word', 'microsoft word', 'văn bản word']
+    },
+    'excel': {
+        'display_name': 'Microsoft Excel',
+        'paths': [
+            r'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE',
+            r'C:\Program Files (x86)\Microsoft Office\root\Office16\EXCEL.EXE'
+        ],
+        'keywords': ['excel', 'microsoft excel']
+    },
+    'powerpoint': {
+        'display_name': 'Microsoft PowerPoint',
+        'paths': [
+            r'C:\Program Files\Microsoft Office\root\Office16\POWERPNT.EXE',
+            r'C:\Program Files (x86)\Microsoft Office\root\Office16\POWERPNT.EXE'
+        ],
+        'keywords': ['powerpoint', 'power point', 'slide']
+    },
+    # Websites (mở bằng browser mặc định)
+    'facebook': {
+        'display_name': 'Facebook',
+        'url': 'https://www.facebook.com',
+        'keywords': ['facebook', 'face', 'fb']
+    },
+    'youtube': {
+        'display_name': 'YouTube',
+        'url': 'https://www.youtube.com',
+        'keywords': ['youtube', 'you tube']
+    },
+    'tiktok': {
+        'display_name': 'TikTok',
+        'url': 'https://www.tiktok.com',
+        'keywords': ['tiktok', 'tik tok']
+    },
+    'google': {
+        'display_name': 'Google Search',
+        'url': 'https://www.google.com',
+        'keywords': ['google', 'tìm kiếm']
+    }
+}
+
+def find_app_by_keyword(text):
+    """Tìm app/website dựa trên từ khóa trong text.
     
-    # Đường dẫn đến Cốc Cốc (hỗ trợ tiếng Việt)
-    app_paths = [
-        r'C:\Users\Public\Desktop\Cốc Cốc.lnk',
-        r'C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Cốc Cốc\Cốc Cốc.lnk',
-        r'C:\Program Files (x86)\CocCoc\Browser\Application\browser.exe',
-        r'C:\Program Files\CocCoc\Browser\Application\browser.exe'
-    ]
+    Returns:
+        tuple: (app_name, app_config) hoặc (None, None)
+    """
+    if not text:
+        return None, None
     
-    # Tìm đường dẫn tồn tại
-    app_path = None
-    for path in app_paths:
-        if os.path.exists(path):
-            app_path = path
-            break
+    text_lower = text.lower()
+    for app_name, config in APP_DATABASE.items():
+        keywords = config.get('keywords', [])
+        for keyword in keywords:
+            if keyword in text_lower:
+                return app_name, config
+    return None, None
+
+# Cooldown cho mở app để ngăn duplicate calls
+_last_open_app_time = {}
+_OPEN_APP_COOLDOWN = 2.0  # 2 giây
+
+def execute_open_app(app_name=None):
+    """Mở ứng dụng hoặc website.
     
-    if app_path:
-        try:
-            # Dùng subprocess để mở (hỗ trợ Unicode tốt hơn)
-            subprocess.Popen(['cmd', '/c', 'start', '', app_path], shell=True)
-            print(f"Executed: Mở Coc Coc từ {app_path}")
-        except Exception as e:
-            print(f"Executed: Lỗi mở Coc Coc - {e}")
-    else:
-        print("Executed: Không tìm thấy Cốc Cốc!")
+    Args:
+        app_name: Tên app hoặc text chứa từ khóa app. 
+                  Nếu None, trả về False để báo hiệu cần thu thập tên app từ voice.
+    
+    Returns:
+        False: Không dừng chương trình
+    """
+    global _last_open_app_time
+    print(f"[DEBUG] execute_open_app() được gọi với app_name='{app_name}'", flush=True)
+    
+    # Nếu không có tên app, báo hiệu cần input thêm
+    if app_name is None:
+        print("[DEBUG] app_name=None, return False", flush=True)
+        return False
+    
+    # Tìm app theo từ khóa
+    found_app, config = find_app_by_keyword(app_name)
+    
+    # COOLDOWN: Ngăn mở cùng app 2 lần trong 2 giây
+    if found_app:
+        current_time = time.perf_counter()
+        last_time = _last_open_app_time.get(found_app, 0)
+        if current_time - last_time < _OPEN_APP_COOLDOWN:
+            print(f"[DEBUG] COOLDOWN ACTIVE - Bỏ qua mở {found_app} (chỉ {current_time - last_time:.2f}s từ lần trước)", flush=True)
+            log_action(f"! Bỏ qua: {found_app} vừa mở rồi (cooldown {_OPEN_APP_COOLDOWN}s)", show_in_gui=False)
+            return False
+        _last_open_app_time[found_app] = current_time
+    
+    # Continue with original logic
+    found_app_recheck, config = find_app_by_keyword(app_name)
+    
+    # Lấy display name
+    display_name = config.get('display_name', found_app_recheck.title()) if found_app_recheck else app_name
+    
+    if not found_app_recheck:
+        log_action(f"✗ Không tìm thấy '{app_name}' trong danh sách ứng dụng")
+        return False
+    
+    try:
+        # Website: mở bằng browser mặc định
+        if 'url' in config:
+            url = config['url']
+            # Log TRƯỚC khi thực thi
+            log_action(f">> Đang mở website: {display_name}...")
+            print(f"[DEBUG] Gọi subprocess.Popen cho URL: {url}", flush=True)
+            subprocess.Popen(['cmd', '/c', 'start', url], shell=True)
+            print(f"[DEBUG] subprocess.Popen URL HOÀN TẤT", flush=True)
+            log_action(f"✓ Đã mở website: {display_name}")
+            return False
+        
+        # Application: tìm đường dẫn tồn tại
+        paths = config.get('paths', [])
+        
+        # Thay thế {} bằng username hiện tại
+        import getpass
+        username = getpass.getuser()
+        paths = [p.format(username) if '{}' in p else p for p in paths]
+        
+        app_path = None
+        for path in paths:
+            if os.path.exists(path):
+                app_path = path
+                break
+        
+        if app_path:
+            # Log TRƯỚC khi thực thi
+            log_action(f">> Đang mở ứng dụng: {display_name}...")
+            
+            # Kiểm tra nếu là file .lnk (shortcut), dùng start để mở
+            if app_path.lower().endswith('.lnk'):
+                print(f"[DEBUG] Gọi subprocess.Popen cho .lnk: {app_path}", flush=True)
+                subprocess.Popen(['cmd', '/c', 'start', '', app_path], shell=True)
+                print(f"[DEBUG] subprocess.Popen .lnk HOÀN TẤT", flush=True)
+            else:
+                # File .exe thông thường
+                print(f"[DEBUG] Gọi subprocess.Popen cho .exe: {app_path}", flush=True)
+                subprocess.Popen([app_path], shell=False)
+                print(f"[DEBUG] subprocess.Popen .exe HOÀN TẤT", flush=True)
+            
+            log_action(f"✓ Đã mở ứng dụng: {display_name}")
+        else:
+            log_action(f"✗ Không tìm thấy đường dẫn cài đặt: {display_name}", show_in_gui=False)
+            print(f"  Đã thử: {paths}")
+    
+    except Exception as e:
+        log_action(f"✗ Lỗi khi mở {display_name}: {e}", show_in_gui=False)
+        print(f"Chi tiết lỗi: {e}")
     
     return False  # Không dừng chương trình
 
 def execute_zoom_in():
     pyautogui.hotkey('ctrl', '+')
-    print("Executed: Phóng to!")
+    log_action("✓ Thực thi: Phóng to (Ctrl +)")
     return False
 
 def execute_zoom_out():
     pyautogui.hotkey('ctrl', '-')
-    print("Executed: Thu nhỏ!")
+    log_action("✓ Thực thi: Thu nhỏ (Ctrl -)")
     return False
 
 def execute_tab_next():
     """Chuyển tab tiếp theo (Ctrl+Tab)."""
     pyautogui.hotkey('ctrl', 'tab')
-    print("Executed: Tab next (Ctrl+Tab)")
+    log_action("✓ Thực thi: Chuyển tab tiếp (Ctrl+Tab)")
     return False
 
 def execute_tab_prev():
     """Chuyển tab trước đó (Ctrl+Shift+Tab)."""
     pyautogui.hotkey('ctrl', 'shift', 'tab')
-    print("Executed: Tab prev (Ctrl+Shift+Tab)")
+    log_action("✓ Thực thi: Chuyển tab trước (Ctrl+Shift+Tab)")
     return False
 
 def execute_type_text(text_content=None):
@@ -105,24 +284,25 @@ def execute_type_text(text_content=None):
         return False
     
     if not text_content:
-        print("Executed: Type text - No content provided")
+        log_action("✗ Nhập văn bản thất bại - Không có nội dung", show_in_gui=False)
         return False
     
     # Format: Viết hoa chữ cái đầu tiên
     formatted_text = text_content[0].upper() + text_content[1:] if len(text_content) > 1 else text_content.upper()
     
     try:
-        import pyperclip
+        
         pyperclip.copy(formatted_text)
         time.sleep(0.1)
         pyautogui.hotkey('ctrl', 'v')
-        print(f"Executed: Type text - '{formatted_text}'")
+        log_action(f"✓ Đã nhập văn bản: '{formatted_text}'")
     except ImportError:
         # Fallback: dùng pyautogui.write nếu không có pyperclip
         pyautogui.write(formatted_text)
-        print(f"Executed: Type text (fallback) - '{formatted_text}'")
+        log_action(f"✓ Đã nhập văn bản (fallback): '{formatted_text}'")
     except Exception as e:
-        print(f"Executed: Type text - Error: {e}")
+        log_action(f"✗ Lỗi nhập văn bản: {e}", show_in_gui=False)
+        print(f"Chi tiết lỗi: {e}")
     
     return False
 
@@ -457,7 +637,7 @@ def execute_mouse_to_point(screen_x, screen_y, previous_mouse_pos, hand_idx, smo
             ts = datetime.datetime.fromtimestamp(call_wall).strftime('%H:%M:%S.%f')
             print(f"[{ts}] [{status}] dt_call={dt_since_last_call:.3f}s dt_last_move={dt_since_last_move:.3f}s queued_target=({smooth_x},{smooth_y})")
         else:
-            # Trong vùng chết hoặc di chuyển quá nhỏ
+            # Trong vùng chết hoặc di chuyển quá nhỏ 
             # Log dead zone cùng timestamp/latency để debug
             ts = datetime.datetime.fromtimestamp(call_wall).strftime('%H:%M:%S.%f')
             proc_time = time.perf_counter() - call_perf
@@ -466,7 +646,7 @@ def execute_mouse_to_point(screen_x, screen_y, previous_mouse_pos, hand_idx, smo
             if is_jittering:
                 print(f"[{ts}] [DEAD ZONE] dt_call={dt_since_last_call:.3f}s dt_last_move={dt_since_last_move:.3f}s proc={proc_time:.4f}s Jittering detected, no move (dist: {distance_normalized:.4f})")
     else:
-        # Lần đầu tiên - chỉ lưu vị trí, không di chuyển
+        # Lần đầu tiên - chỉ lưu vị trí, không di chuyển  
         ts = datetime.datetime.fromtimestamp(call_wall).strftime('%H:%M:%S.%f')
         proc_time = time.perf_counter() - call_perf
         print(f"[{ts}] [INIT] dt_call={dt_since_last_call:.3f}s proc={proc_time:.4f}s Mouse tracking initialized at finger pos ({int(screen_x)}, {int(screen_y)})")
@@ -502,15 +682,20 @@ def execute_action(execute_func, pred_label, current_time, is_continuous: bool =
     Returns: should_stop (bool)
     """
     global last_execution_times
+    
+    print(f"[DEBUG] execute_action() được gọi: pred_label='{pred_label}', is_continuous={is_continuous}", flush=True)
 
     if not is_continuous:
         if pred_label in last_execution_times:
             time_since_last = current_time - last_execution_times[pred_label]
             if time_since_last < DISCRETE_COOLDOWN:
+                print(f"[DEBUG] Cooldown active - Bỏ qua (time_since_last={time_since_last:.3f}s)", flush=True)
                 return False
 
     # Execute action
+    print(f"[DEBUG] Đang gọi execute_func() cho '{pred_label}'...", flush=True)
     should_stop = execute_func()
+    print(f"[DEBUG] execute_func() HOÀN TẤT cho '{pred_label}'", flush=True)
 
     # Cập nhật thời gian execute cuối
     last_execution_times[pred_label] = current_time

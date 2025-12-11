@@ -9,8 +9,17 @@ KEYWORD_ACTION_MAP = {
     'click trái': 'clickchuottrai',
     'dừng chương trình': 'dungchuongtrinh',
     'dừng lại': 'dungchuongtrinh',
+    'mở app': 'moapp',
+    'mở ứng dụng': 'moapp',
     'mở coc coc': 'moapp',
     'mở trình duyệt': 'moapp',
+    'mở chrome': 'moapp',
+    'mở vscode': 'moapp',
+    'mở visual studio code': 'moapp',
+    'mở word': 'moapp',
+    'mở facebook': 'moapp',
+    'mở youtube': 'moapp',
+    'mở tiktok': 'moapp',
     'phóng to': 'phongto',
     'thu nhỏ': 'thunho',
     'lên': 'vuotlen',
@@ -51,6 +60,15 @@ def dispatch_command(cmd_text: str, model=None, use_model_if_no_keyword: bool = 
     if label:
         if debug:
             print(f"[debug] Keyword matched phrase -> label='{label}' for cmd='{cmd_text}'")
+        
+        # Nếu là moapp, trích xuất tên app từ câu lệnh
+        if label == 'moapp':
+            func = lambda: Actions.execute_open_app(cmd_text)
+            Actions.execute_action(func, label, now, is_continuous=False)
+            result.update({'executed': True, 'label': label, 'confidence': None})
+            return result
+        
+        # Các action khác xử lý bình thường
         func = Actions.get_action_func(label)
         if func:
             Actions.execute_action(func, label, now, is_continuous=False)
@@ -63,8 +81,18 @@ def dispatch_command(cmd_text: str, model=None, use_model_if_no_keyword: bool = 
             pred_label, confidence, probs = model.predict_action_from_text(cmd_text)
             if debug:
                 print(f"[debug] Model predicted label='{pred_label}' confidence={confidence:.2f}% for cmd='{cmd_text}'")
-            func = Actions.get_action_func(pred_label)
+            
             result.update({'label': pred_label, 'confidence': confidence})
+            
+            # Nếu model dự đoán là moapp, trích xuất tên app
+            if pred_label == 'moapp':
+                func = lambda: Actions.execute_open_app(cmd_text)
+                Actions.execute_action(func, pred_label, now, is_continuous=False)
+                result['executed'] = True
+                return result
+            
+            # Các action khác
+            func = Actions.get_action_func(pred_label)
             if func:
                 Actions.execute_action(func, pred_label, now, is_continuous=False)
                 result['executed'] = True
