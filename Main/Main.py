@@ -1,38 +1,41 @@
 # main.py - File chạy chương trình chính hợp nhất webcam gesture và voice control
 
-import cv2
-import time
-from collections import deque
-import numpy as np
-import threading
+# Standard library imports
 import sys
 import os
+import time
+import threading
 import argparse
+import codecs
+from collections import deque
+
+# Third-party imports
+import cv2
+import numpy as np
+import pyautogui
 from PIL import Image, ImageDraw, ImageFont
 
-# Fix Unicode encoding for Windows console
-if sys.platform == 'win32':
-    import codecs
-    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
-    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
-
-# Import modules cho webcam gesture control
+# Local imports - webcam gesture control
 from Model import load_gesture_model, predict_gesture, N_FRAMES
 from Detection import hands, extract_keypoints_from_frame, draw_hand_landmarks, display_frame, detect_aligned_fingers, stabilize_results_landmarks
 from Actions import execute_mouse_to_point, get_action_func, execute_action, clear_actuator_target, pause_actuator_for
-import pyautogui
+import Actions
 
-# Import modules cho voice control
+# Local imports - voice control
 try:
     import speech_recognition as sr
     from google_listen import create_recognizer, listen_phrase, adjust_for_ambient_noise
     from google_model import VoiceModel
     import command_dispatcher as dispatcher
-    import Actions
     VOICE_AVAILABLE = True
 except ImportError as e:
     print(f"[!] Voice control không khả dụng: {e}")
     VOICE_AVAILABLE = False
+
+# Fix Unicode encoding for Windows console
+if sys.platform == 'win32':
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
 
 # Biến toàn cục để điều khiển cả 2 thread
 should_stop = False
@@ -421,7 +424,8 @@ def webcam_gesture_thread():
         keypoints, hand_centers, hand_fingers = extract_keypoints_from_frame(frame_rgb, results.multi_hand_landmarks)
         # Kiểm tra trường hợp ghi đè bằng ngón tay thẳng hàng của MediaPipe (2 ngón -> click trái, 3 ngón -> click phải)
         current_time = time.time()
-        aligned_action = detect_aligned_fingers(results, frame.shape)
+        # Hàm trả về tuple: (action_name, num_extended_fingers)
+        aligned_action, aligned_fingers = detect_aligned_fingers(results, frame.shape)
 
         # Nếu người dùng giơ 4 ngón trở lên trên tay chính, ưu tiên hành động do model dự đoán
         # và KHÔNG áp dụng ghi đè click bằng ngón thẳng hàng. Dừng actuator tạm thời để an toàn.
@@ -436,17 +440,21 @@ def webcam_gesture_thread():
             pause_actuator_for(0, timeout=0.8)
             aligned_action = None
 
-        # Yêu cầu nghiêm ngặt hơn cho click dựa trên số ngón:
-        # - Click trái (aligned 2 ngón) chỉ khi đúng 2 ngón duỗi trên tay chính
-        # - Click phải (aligned 3 ngón) chỉ khi đúng 3 ngón duỗi trên tay chính
-        # Nếu số ngón không khớp -> bỏ qua aligned click
+        # Yêu cầu CHẶT CHẼ cho click dựa trên số ngón:
+        # - Click trái: cả aligned_fingers và primary_fingers đều phải = 2
+        # - Click phải: cả aligned_fingers và primary_fingers đều phải = 3 (KHÔNG >= 3)
+        # Điều này tránh nhầm lẫn với vuốt (4-5 ngón duỗi)
         try:
-            if aligned_action == 'clickchuottrai' and primary_fingers != 2:
-                aligned_action = None
-            if aligned_action == 'clickchuotphai' and primary_fingers != 3:
-                aligned_action = None
+            if aligned_action == 'clickchuottrai':
+                # Yêu cầu: cả 2 phương pháp đếm đều = 2
+                if aligned_fingers != 2 or primary_fingers != 2:
+                    aligned_action = None
+            elif aligned_action == 'clickchuotphai':
+                # Yêu cầu: cả 2 phương pháp đếm đều = 3 (không chấp nhận >3)
+                if aligned_fingers != 3 or primary_fingers != 3:
+                    aligned_action = None
         except Exception:
-            pass
+            aligned_action = None
 
         if aligned_action is not None:
             # Nếu có aligned_action: xóa buffer model để tránh xung đột dự đoán

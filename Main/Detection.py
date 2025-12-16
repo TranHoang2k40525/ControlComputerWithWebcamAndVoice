@@ -22,20 +22,61 @@ _SMOOTH_ALPHA = 0.65       # hệ số EMA: lớn hơn -> nhạy hơn, nhỏ hơ
 _MAX_MATCH_DIST_PX = 200   # khoảng cách pixel tối đa để ghép tay giữa các frame
 _MAX_MISSED_FRAMES = 6     # số frame tối đa trước khi quên một tay đã theo dõi
 
-def count_extended_fingers(landmarks, h, w):
+def count_extended_fingers(landmarks, h, w, include_thumb=False):
     """
-    Đếm ngón tay duỗi (bỏ thumb).
+    Đếm ngón tay duỗi.
+    Args:
+        landmarks: MediaPipe hand landmarks
+        h, w: Frame dimensions
+        include_thumb: Có đếm ngón cái không
     Returns: int (số ngón duỗi)
     """
+    extended = 0
+    
+    # Check thumb (landmark 4 tip vs 3 MCP) nếu cần
+    if include_thumb:
+        thumb_tip_x = landmarks.landmark[4].x * w
+        thumb_mcp_x = landmarks.landmark[3].x * w
+        # Thumb duỗi khi tip xa hơn MCP theo chiều ngang
+        if abs(thumb_tip_x - thumb_mcp_x) > (w * 0.05):  # threshold 5% width
+            extended += 1
+    
+    # Check 4 ngón còn lại
     tip_ids = [8, 12, 16, 20]  # Index, middle, ring, pinky tips
     pip_ids = [6, 10, 14, 18]  # Corresponding PIP
-    extended = 0
     for tip, pip in zip(tip_ids, pip_ids):
         tip_y = landmarks.landmark[tip].y * h
         pip_y = landmarks.landmark[pip].y * h
         if tip_y < pip_y:  # Tip cao hơn PIP → duỗi
             extended += 1
     return extended
+
+def get_finger_states(landmarks, h, w):
+    """
+    Trả về trạng thái từng ngón tay (duỗi hay gấp).
+    Returns: dict {finger_name: bool} với True = duỗi, False = gấp
+    """
+    states = {}
+    
+    # Thumb
+    thumb_tip_x = landmarks.landmark[4].x * w
+    thumb_mcp_x = landmarks.landmark[3].x * w
+    states['thumb'] = abs(thumb_tip_x - thumb_mcp_x) > (w * 0.05)
+    
+    # Index, Middle, Ring, Pinky
+    fingers_info = [
+        ('index', 8, 6),
+        ('middle', 12, 10),
+        ('ring', 16, 14),
+        ('pinky', 20, 18)
+    ]
+    
+    for name, tip_id, pip_id in fingers_info:
+        tip_y = landmarks.landmark[tip_id].y * h
+        pip_y = landmarks.landmark[pip_id].y * h
+        states[name] = tip_y < pip_y
+    
+    return states
 
 def extract_keypoints_from_frame(frame_rgb, multi_landmarks):
     """
@@ -322,26 +363,29 @@ def detect_aligned_fingers(results, frame_shape):
     """Detect special aligned-finger gestures directly from Mediapipe landmarks.
 
     Rules implemented (primary hand index 0):
-      - If Index (5,6,7,8) and Middle (9,10,11,12) are straight and parallel -> left click
-      - If Index+Middle+Ring (13,14,15,16) are all straight and mutually parallel (approx) -> right click
+      - If Index (5,6,7,8) and Middle (9,10,11,12) are straight and parallel 
+        AND only 2 fingers extended -> left click
+      - If Index+Middle+Ring (13,14,15,16) are all straight and mutually parallel (approx)
+        AND only 3 fingers extended (pinky and thumb must be folded) -> right click
 
-    Returns: 'clickchuottrai' or 'clickchuotphai' or None
+    Returns: tuple (action_name, num_extended_fingers) or (None, 0)
     """
     if results is None or results.multi_hand_landmarks is None or len(results.multi_hand_landmarks) == 0:
-        return None
+        return None, 0
 
     h, w = frame_shape[0], frame_shape[1]
     # Use primary hand (first detected)
     try:
         hand_landmarks = results.multi_hand_landmarks[0]
     except Exception:
-        return None
+        return None, 0
 
     index_idxs = [5, 6, 7, 8]
     middle_idxs = [9, 10, 11, 12]
     ring_idxs = [13, 14, 15, 16]
 
     try:
+        # Kiểm tra tính thẳng và song song của các ngón
         idx_straight = _is_finger_straight(hand_landmarks, index_idxs, h, w)
         mid_straight = _is_finger_straight(hand_landmarks, middle_idxs, h, w)
         ring_straight = _is_finger_straight(hand_landmarks, ring_idxs, h, w)
@@ -349,18 +393,38 @@ def detect_aligned_fingers(results, frame_shape):
         idx_mid_parallel = _fingers_parallel(hand_landmarks, index_idxs, middle_idxs, h, w)
         mid_ring_parallel = _fingers_parallel(hand_landmarks, middle_idxs, ring_idxs, h, w)
         idx_ring_parallel = _fingers_parallel(hand_landmarks, index_idxs, ring_idxs, h, w)
+        
+        # Lấy trạng thái từng ngón để kiểm tra chặt chẽ
+        finger_states = get_finger_states(hand_landmarks, h, w)
+        
+        # Đếm tổng số ngón duỗi
+        num_extended = sum([1 for extended in finger_states.values() if extended])
+        
     except Exception:
-        return None
+        return None, 0
 
-    # 3-finger case: index+middle+ring straight and roughly parallel pairwise
-    if idx_straight and mid_straight and ring_straight and idx_mid_parallel and mid_ring_parallel and idx_ring_parallel:
-        return 'clickchuotphai'  # right click for 3 fingers
+    # ===== CLICK PHẢI: index+middle+ring duỗi VÀ pinky+thumb GẤP =====
+    # Điều kiện CHẶT CHẼ để tránh nhầm với vuốt (4-5 ngón)
+    if (idx_straight and mid_straight and ring_straight and 
+        idx_mid_parallel and mid_ring_parallel and idx_ring_parallel):
+        
+        # KIỂM TRA BỔ SUNG: pinky và thumb PHẢI gấp
+        if not finger_states['pinky'] and not finger_states['thumb']:
+            # Chỉ chấp nhận khi có ĐÚNG 3 ngón duỗi
+            if num_extended == 3:
+                return 'clickchuotphai', num_extended
 
-    # 2-finger case: index+middle straight and parallel
+    # ===== CLICK TRÁI: index+middle duỗi VÀ các ngón khác GẤP =====
     if idx_straight and mid_straight and idx_mid_parallel:
-        return 'clickchuottrai'  # left click for 2 fingers
+        # KIỂM TRA BỔ SUNG: ring, pinky, thumb PHẢI gấp
+        if (not finger_states['ring'] and 
+            not finger_states['pinky'] and 
+            not finger_states['thumb']):
+            # Chỉ chấp nhận khi có ĐÚNG 2 ngón duỗi
+            if num_extended == 2:
+                return 'clickchuottrai', num_extended
 
-    return None
+    return None, 0
 
 def display_frame(frame, sequence_buffer, mapped_action):
     """

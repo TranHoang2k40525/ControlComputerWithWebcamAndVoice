@@ -1,15 +1,19 @@
 # actions.py - Các hàm thực thi hành động (gộp cấu hình: SCROLL_AMOUNT, SMOOTH_ALPHA, v.v.)
 
-import pyautogui
-import pyperclip
+# Standard library imports
+import os
 import time
 import math
-import cv2
-import numpy as np
 import datetime
 import threading
 import subprocess
-import os
+import getpass
+
+# Third-party imports
+import cv2
+import numpy as np
+import pyautogui
+import pyperclip
 # Callback function để log vào Voice GUI (sẽ được set từ Main.py)
 _voice_log_callback = None
 
@@ -54,7 +58,7 @@ def execute_left_click():
 
 def execute_stop_program():
     log_action("! Dừng chương trình - Thoát hệ thống")
-    return False  # Dừng chương trình
+    return True  # Dừng chương trình
 
 # Cấu hình ứng dụng và website
 APP_DATABASE = {
@@ -214,7 +218,6 @@ def execute_open_app(app_name=None):
         paths = config.get('paths', [])
         
         # Thay thế {} bằng username hiện tại
-        import getpass
         username = getpass.getuser()
         paths = [p.format(username) if '{}' in p else p for p in paths]
         

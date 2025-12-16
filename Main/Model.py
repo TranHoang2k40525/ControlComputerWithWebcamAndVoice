@@ -1,7 +1,9 @@
 # model.py - Load model và predict gesture (gộp config: LABEL_ENCODER, N_FRAMES, etc.)
 
-from ast import Import
+# Standard library imports
 import os
+
+# Third-party imports
 import numpy as np
 from tensorflow.keras.models import load_model
 
