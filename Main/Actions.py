@@ -29,17 +29,17 @@ def log_action(msg, show_in_gui=True):
         _voice_log_callback(msg)
 
 # Gộp config actions
-SMOOTH_ALPHA = 0.6  # Tăng lên để phản hồi nhanh hơn (40% mới, 60% cũ)
+SMOOTH_ALPHA = 0.7  
 DISCRETE_COOLDOWN = 1.0
 # Cấu hình scroll mượt khi gesture được duy trì (per-call nhỏ, được gọi mỗi frame)
 CONTINUOUS_SCROLL_STEP = 30  # số lượng scroll (px) mỗi lần gọi liên tiếp
 CONTINUOUS_SCROLL_MAX_STEP = 900  # giới hạn tối đa số scroll trong 1 lần tính
 # Cấu hình cho di chuyển chuột mượt mà
-MOUSE_DEAD_ZONE = 0.02  # Vùng chết để lọc nhiễu (2% màn hình) - giảm để nhạy hơn
-MOUSE_SPEED_MULTIPLIER =  4 # Hệ số tốc độ di chuyển - tăng lên để chuột di nhanh hơn
-MOUSE_MAX_MOVE = 100  # Giới hạn di chuyển tối đa mỗi frame (pixels) - tăng lên để cho phép di xa hơn
-MOUSE_MAX_SPEED_PX_PER_SEC = 600.0  # Giới hạn tốc độ theo thời gian (px / second)
-ACTUATION_HZ = 60  # Tần số actuator sẽ di chuyển con trỏ (Hz)
+MOUSE_DEAD_ZONE = 0.03  # Tăng từ 0.015 → 0.03 để CHỐNG RUNG tốt hơn (3% màn hình)
+MOUSE_SPEED_MULTIPLIER = 6  # Giữ ở 6 để cân bằng giữa tốc độ và chống rung
+MOUSE_MAX_MOVE = 100  # Tăng từ 100 → 200 pixels để cho phép nhảy xa hơn
+MOUSE_MAX_SPEED_PX_PER_SEC = 600.0  # 1200 px/s cho tốc độ cao
+ACTUATION_HZ = 60  #  60 Hz để cập nhật nhanh hơn
 pyautogui.FAILSAFE = True
 pyautogui.PAUSE = 0.0
 
@@ -294,9 +294,8 @@ def execute_type_text(text_content=None):
     formatted_text = text_content[0].upper() + text_content[1:] if len(text_content) > 1 else text_content.upper()
     
     try:
-        
         pyperclip.copy(formatted_text)
-        time.sleep(0.1)
+        # Không dùng sleep - để paste ngay lập tức
         pyautogui.hotkey('ctrl', 'v')
         log_action(f"✓ Đã nhập văn bản: '{formatted_text}'")
     except ImportError:
@@ -387,8 +386,8 @@ MANUAL_OVERRIDE_TIMEOUT = 1.0      # giây pause khi phát hiện manual overrid
 
 # Smoothed finger positions (px) để tránh di chuyển do nhiễu nhỏ
 _finger_smoothed = {}  # hand_idx -> (x_px, y_px)
-FINGER_SMOOTH_ALPHA = 0.7  # EMA alpha cho vị trí ngón tay (tách khỏi SMOOTH_ALPHA chuột)
-MIN_MOVE_PIXELS = 6  # Nếu di chuyển sau lọc < MIN_MOVE_PIXELS -> coi như không di chuyển
+FINGER_SMOOTH_ALPHA = 0.92  # Tăng từ 0.85 → 0.92 để cực kỳ responsive (92% mới, 8% cũ)
+MIN_MOVE_PIXELS = 1  # Giảm từ 2 → 1 để bắt đầu di chuyển ngay lập tức, hầu như không delay
 
 # Time-aware pointer smoothing (bù gap do fps/latency)
 # (Các biến time-aware pointer filter đã bị loại bỏ vì không sử dụng)
@@ -579,25 +578,36 @@ def execute_mouse_to_point(screen_x, screen_y, previous_mouse_pos, hand_idx, smo
 
         # Kiểm tra xem có phải rung lắc không (thay đổi hướng liên tục)
         is_jittering = False
-        if len(_movement_history[hand_idx]) >= 3:
-            # Tính tổng vector của 3 frame gần nhất
-            sum_x = sum(h[0] for h in _movement_history[hand_idx][-3:])
-            sum_y = sum(h[1] for h in _movement_history[hand_idx][-3:])
+        if len(_movement_history[hand_idx]) >= 5:
+            # Tính tổng vector của 5 frame gần nhất (đủ dữ liệu để phát hiện rung)
+            sum_x = sum(h[0] for h in _movement_history[hand_idx][-5:])
+            sum_y = sum(h[1] for h in _movement_history[hand_idx][-5:])
             sum_distance = (sum_x ** 2 + sum_y ** 2) ** 0.5
 
             # Tính tổng khoảng cách tuyệt đối
-            total_distance = sum((h[0]**2 + h[1]**2)**0.5 for h in _movement_history[hand_idx][-3:])
+            total_distance = sum((h[0]**2 + h[1]**2)**0.5 for h in _movement_history[hand_idx][-5:])
 
             # Nếu tổng vector nhỏ hơn nhiều so với tổng khoảng cách → rung lắc
-            if total_distance > 0 and sum_distance / total_distance < 0.3:
+            # Tăng ngưỡng từ 0.3 → 0.5 để phát hiện rung nhiều hơn
+            if total_distance > 0 and sum_distance / total_distance < 0.5:
+                is_jittering = True
+            
+            # Kiểm tra thêm: nếu tất cả các di chuyển đều nhỏ (< 8 pixels) → cũng là rung
+            # Tăng từ 5 → 8 để phát hiện rung tốt hơn
+            if not is_jittering and total_distance < 8.0:
                 is_jittering = True
 
-        # Chỉ áp dụng vùng chết nếu đang rung lắc
+        # Áp dụng vùng chết cho rung lắc HOẶC di chuyển quá nhỏ
         screen_w, screen_h = pyautogui.size()
         distance_normalized = distance / ((screen_w ** 2 + screen_h ** 2) ** 0.5)
 
         should_move = True
+        # Chặn rung lắc trong vùng chết (đã tăng MOUSE_DEAD_ZONE lên 0.03)
         if is_jittering and distance_normalized < MOUSE_DEAD_ZONE:
+            should_move = False
+        # Chặn di chuyển quá nhỏ (< 4 pixels) ngay cả khi không phát hiện rung
+        # Tăng từ 3 → 4 pixels để chống rung tốt hơn
+        elif distance < 4.0:
             should_move = False
 
         # Bỏ qua các di chuyển rất nhỏ để tránh drift chuột
@@ -636,18 +646,11 @@ def execute_mouse_to_point(screen_x, screen_y, previous_mouse_pos, hand_idx, smo
             dt_since_last_move = (call_perf - last_move) if (last_move is not None) else 0.0
             _last_move_time[hand_idx] = call_perf
 
-            status = "JITTER" if is_jittering else "MOVE"
-            ts = datetime.datetime.fromtimestamp(call_wall).strftime('%H:%M:%S.%f')
-            print(f"[{ts}] [{status}] dt_call={dt_since_last_call:.3f}s dt_last_move={dt_since_last_move:.3f}s queued_target=({smooth_x},{smooth_y})")
-        else:
-            # Trong vùng chết hoặc di chuyển quá nhỏ 
-            # Log dead zone cùng timestamp/latency để debug
-            ts = datetime.datetime.fromtimestamp(call_wall).strftime('%H:%M:%S.%f')
-            proc_time = time.perf_counter() - call_perf
-            last_move = _last_move_time.get(hand_idx)
-            dt_since_last_move = (call_perf - last_move) if (last_move is not None) else 0.0
-            if is_jittering:
-                print(f"[{ts}] [DEAD ZONE] dt_call={dt_since_last_call:.3f}s dt_last_move={dt_since_last_move:.3f}s proc={proc_time:.4f}s Jittering detected, no move (dist: {distance_normalized:.4f})")
+            # Chỉ log MOVE events, bỏ JITTER/DEAD ZONE để giảm I/O overhead
+            if not is_jittering:
+                ts = datetime.datetime.fromtimestamp(call_wall).strftime('%H:%M:%S.%f')
+                print(f"[{ts}] [MOVE] queued_target=({smooth_x},{smooth_y})")
+        # else: Không log DEAD ZONE để giảm tải I/O
     else:
         # Lần đầu tiên - chỉ lưu vị trí, không di chuyển  
         ts = datetime.datetime.fromtimestamp(call_wall).strftime('%H:%M:%S.%f')

@@ -73,12 +73,17 @@ def get_cached_fonts():
 Model, label_encoder = load_gesture_model()
 
 # Bộ đệm và trạng thái cho webcam
-sequence_buffer = deque(maxlen=30)  # N_FRAMES từ model.py
+sequence_buffer = deque(maxlen=15)  # Giảm từ 30 → 15 frames để phản hồi nhanh hơn
 previous_centers = [(0, 0), (0, 0)]
 previous_mouse_pos = [None, None]
 last_discrete_time = 0
 last_action = "No action"
 last_log_time = 0
+
+# Tối ưu rendering voice panel
+_voice_panel_cache = None
+_voice_panel_frame_counter = 0
+_VOICE_PANEL_RENDER_INTERVAL = 5  # Tăng từ 3 → 5 frames để giảm tải CPU
 
 # ==================== VOICE CONTROL GUI ====================
 def add_voice_log(msg):
@@ -201,8 +206,8 @@ def discover_and_load_model(model_path, tokenizer_path, label_path, train_dir='T
     return VoiceModel(m, t, l)
 
 
-def voice_control_thread(use_model=True, prefer_model=True, model_path=None, tokenizer_path=None, label_path=None):
-    """Thread điều khiển giọng nói."""
+def voice_control_thread(use_model=True, model_path=None, tokenizer_path=None, label_path=None):
+    """Thread điều khiển giọng nói qua LSTM."""
     global should_stop
     
     if not VOICE_AVAILABLE:
@@ -218,13 +223,12 @@ def voice_control_thread(use_model=True, prefer_model=True, model_path=None, tok
             add_voice_log('[Voice] Đang tải mô hình LSTM AI...')
             model = discover_and_load_model(model_path, tokenizer_path, label_path)
             add_voice_log('[Voice] ✓ LSTM Model đã sẵn sàng!')
-            add_voice_log('[Voice] ✓ CHẾ ĐỘ: LSTM MODEL CHÍNH - KEYWORD DỰ PHÒNG')
         except Exception as e:
             add_voice_log(f'[Voice] ! Lỗi khi load model: {e}')
-            add_voice_log('[Voice] ! Fallback: Chuyển sang chế độ chỉ dùng từ khóa.')
+            add_voice_log('[Voice] ! Không thể xử lý lệnh mà không có LSTM model.')
             model = None
     else:
-        add_voice_log('[Voice] Chế độ: Chỉ sử dụng từ khóa (LSTM model bị tắt)')
+        add_voice_log('[Voice] ! LSTM model bị tắt - Voice control sẽ không hoạt động.')
 
     r = create_recognizer()
     try:
@@ -257,73 +261,68 @@ def voice_control_thread(use_model=True, prefer_model=True, model_path=None, tok
                             should_stop = True
                         break
 
-                    # Kiểm tra lệnh nhập văn bản (xử lý đặc biệt - cần nghe nội dung)
-                    typing_keywords = ['nhập văn bản', 'gõ văn bản', 'gõ chữ', 'viết chữ', 'chế độ gõ']
-                    if any(kw in cmd for kw in typing_keywords):
-                        add_voice_log('[Voice] Chế độ nhập văn bản. Hãy nói nội dung...')
-                        content = listen_phrase(r, source, timeout=5, time_limit=15)
-                        if content:
-                            Actions.execute_type_text(content)
-                        else:
-                            add_voice_log('[Voice] ! Không nghe thấy nội dung để nhập.')
-                        continue
-
-                    # ============ CHẾ ĐỘ LSTM THUẦN TÚY ============
-                    # Tất cả lệnh PHẢI đi qua LSTM, không có fallback keyword
+                    # ============ XỬ LÝ LỆNH QUA LSTM ============
                     
                     if model is None:
                         add_voice_log('[Voice] ✗ LỖI: LSTM model chưa load - không thể xử lý lệnh!')
                         continue
                     
                     try:
-                        # Bước 1: Bắt đầu xử lý
+                        # Gọi LSTM model để nhận diện hành động
                         add_voice_log(f'[Voice] >> LSTM Processing: "{cmd}"')
-                        
-                        # Bước 2: Gọi LSTM model
                         pred_label, confidence, _ = model.predict_action_from_text(cmd)
+                        add_voice_log(f'[Voice] << LSTM Output: {pred_label} ({confidence:.1f}%)')
                         
-                        # Bước 3: Hiển kết quả NGAY
-                        add_voice_log(f'[Voice] << LSTM Output: {pred_label} (confidence={confidence:.1f}%)')
-                        
-                        # Bước 4: Xử lý theo label LSTM dự đoán
+                        # Xử lý hành động dựa trên kết quả LSTM
                         if pred_label == 'moapp':
-                            # LSTM xác định: Hành động = Mở app
-                            add_voice_log(f'[Voice] ✓ LSTM → Hành động: MỞ ỨNG DỤNG')
-                            
-                            # Bước 5: Trích xuất tên app
-                            add_voice_log(f'[Voice] >> Trích xuất tên app từ: "{cmd}"')
-                            
-                            # Bước 6: Thực thi
+                            add_voice_log(f'[Voice] ✓ Hành động: MỞ ỨNG DỤNG')
                             add_voice_log(f'[Voice] >> Đang mở ứng dụng...')
-                            Actions.execute_action(
-                                lambda: Actions.execute_open_app(cmd), 
-                                pred_label, 
-                                time.perf_counter(), 
-                                is_continuous=False
-                            )
-                            # Bước 7: Hoàn tất
-                            add_voice_log(f'[Voice] ✓✓ HOÀN TẤT: Mở ứng dụng (LSTM={confidence:.1f}%)')
+                            # Chạy trong thread riêng để không block webcam
+                            threading.Thread(
+                                target=lambda: Actions.execute_action(
+                                    lambda: Actions.execute_open_app(cmd), 
+                                    pred_label, 
+                                    time.perf_counter(), 
+                                    is_continuous=False
+                                ),
+                                daemon=True
+                            ).start()
+                            add_voice_log(f'[Voice] ✓✓ HOÀN TẤT: Mở ứng dụng')
                         
                         elif pred_label == 'nhapvanban':
-                            # LSTM xác định: Hành động = Nhập văn bản
-                            # Nhưng nhập văn bản đã xử lý ở trên (dùng keyword detection)
-                            # Trường hợp này không nên xảy ra vì đã check typing_keywords trước
-                            add_voice_log(f'[Voice] ! Cảnh báo: LSTM dự đoán nhapvanban nhưng đã xử lý ở trên')
+                            add_voice_log(f'[Voice] ✓ Hành động: NHẬP VĂN BẢN')
+                            add_voice_log(f'[Voice] >> Hãy nói nội dung cần nhập...')
+                            
+                            content = listen_phrase(r, source, timeout=5, time_limit=15)
+                            
+                            if content:
+                                add_voice_log(f'[Voice] >> Đã thu: "{content}"')
+                                # Chạy trong thread riêng để không block webcam
+                                threading.Thread(
+                                    target=lambda: Actions.execute_type_text(content),
+                                    daemon=True
+                                ).start()
+                                add_voice_log(f'[Voice] ✓✓ HOÀN TẤT: Nhập văn bản')
+                            else:
+                                add_voice_log(f'[Voice] ! Không nghe thấy nội dung.')
                         
                         else:
                             # Các hành động khác: click, scroll, zoom, tab...
                             func = Actions.get_action_func(pred_label)
                             if func:
-                                add_voice_log(f'[Voice] ✓ LSTM → Hành động: {pred_label.upper()}')
-                                add_voice_log(f'[Voice] >> Đang thực thi {pred_label}...')
-                                Actions.execute_action(func, pred_label, time.perf_counter(), is_continuous=False)
-                                add_voice_log(f'[Voice] ✓✓ HOÀN TẤT: {pred_label} (LSTM={confidence:.1f}%)')
+                                add_voice_log(f'[Voice] ✓ Hành động: {pred_label.upper()}')
+                                # Chạy trong thread riêng để không block webcam
+                                threading.Thread(
+                                    target=lambda: Actions.execute_action(func, pred_label, time.perf_counter(), is_continuous=False),
+                                    daemon=True
+                                ).start()
+                                add_voice_log(f'[Voice] ✓✓ HOÀN TẤT: {pred_label}')
                             else:
-                                add_voice_log(f'[Voice] ✗ LỖI: LSTM dự đoán "{pred_label}" nhưng không tìm thấy hàm xử lý!')
+                                add_voice_log(f'[Voice] ✗ LỖI: Không tìm thấy hàm xử lý cho "{pred_label}"!')
                     
                     except Exception as e:
-                        add_voice_log(f'[Voice] ✗✗ LỖI LSTM: {e}')
-                        add_voice_log(f'[Voice] ! Không thể xử lý lệnh "{cmd}" - LSTM model có vấn đề')
+                        add_voice_log(f'[Voice] ✗ LỖI: {e}')
+                        add_voice_log(f'[Voice] ! Không thể xử lý lệnh "{cmd}"')
 
     except KeyboardInterrupt:
         add_voice_log('[Voice] ! Dừng bởi người dùng')
@@ -353,6 +352,8 @@ def webcam_gesture_thread():
 
     fps_start_time = time.time()
     fps_counter = 0
+    current_fps = 0.0
+    last_action_execute_time = None  # Tracking thời gian action cuối cùng được execute
 
     # Lấy kích thước màn hình
     screen_w, screen_h = pyautogui.size()
@@ -404,12 +405,12 @@ def webcam_gesture_thread():
         frame = cv2.flip(frame, 1)
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = hands.process(frame_rgb)
-        # Làm mượt/ổn định các landmark thô của MediaPipe ngay trên kết quả để giảm rung
-        try:
-            results = stabilize_results_landmarks(results, frame.shape)
-        except Exception as e:
-            # Defensive: if smoothing fails, continue with raw results
-            print(f"[Webcam] Lỗi khi làm mượt landmark: {e}")
+        # TẮT stabilize_results_landmarks để tăng FPS từ 10-12 lên 25-30
+        # MediaPipe đã có tracking built-in, không cần smoothing thêm
+        # try:
+        #     results = stabilize_results_landmarks(results, frame.shape)
+        # except Exception as e:
+        #     print(f"[Webcam] Lỗi khi làm mượt landmark: {e}")
 
         # Nếu mediapipe không phát hiện tay hoặc landmark không đầy đủ -> không dùng model
         use_model = False
@@ -561,6 +562,9 @@ def webcam_gesture_thread():
                         should_stop = True
                 last_discrete_time = current_time
             
+            # Cập nhật thời gian action được execute
+            last_action_execute_time = current_time
+            
             if current_time - last_log_time >= 1.0 and pred_label != last_action:
                 print(f"[Webcam] *** PHÁT HIỆN: {pred_label} (Conf: {confidence:.2f}) | Kiểu: {gesture_type} ***")
                 last_log_time = current_time
@@ -570,14 +574,19 @@ def webcam_gesture_thread():
             if should_stop:
                 break
         
-        # Vẽ và hiển thị
-        frame = draw_hand_landmarks(frame, results, hand_centers, hand_fingers, previous_centers, previous_mouse_pos, gesture_label, confidence, mapped_action)
+        # Vẽ và hiển thị với buffer frames và action time
+        frame = draw_hand_landmarks(frame, results, hand_centers, hand_fingers, previous_centers, previous_mouse_pos, gesture_label, confidence, mapped_action, buffer_frames=len(sequence_buffer), last_action_time=last_action_execute_time)
 
         # Thay đổi kích thước webcam
         disp = cv2.resize(frame, (target_w_scaled, target_h_scaled))
         
-        # Tạo voice panel MỔI FRAME để hiển thị real-time (không còn lazy rendering)
-        voice_panel = create_voice_console_window(width=voice_width, height=voice_height, scroll_offset=voice_scroll_offset)
+        # Tối ưu: Render voice panel chỉ mỗi 3 frames thay vì mỗi frame
+        global _voice_panel_cache, _voice_panel_frame_counter
+        _voice_panel_frame_counter += 1
+        if _voice_panel_cache is None or _voice_panel_frame_counter >= _VOICE_PANEL_RENDER_INTERVAL:
+            _voice_panel_cache = create_voice_console_window(width=voice_width, height=voice_height, scroll_offset=voice_scroll_offset)
+            _voice_panel_frame_counter = 0
+        voice_panel = _voice_panel_cache
         
         # Tạo canvas kết hợp: webcam (trái) + voice (phải)
         combined = np.zeros((target_h_scaled, target_w_scaled + voice_width, 3), dtype=np.uint8)
@@ -586,17 +595,20 @@ def webcam_gesture_thread():
         
         cv2.imshow(window_name, combined)
         
-        # FPS
+        # Tính FPS real-time mỗi frame
         fps_counter += 1
-        if fps_counter % 30 == 0:
-            fps_elapsed = time.time() - fps_start_time
-            fps = fps_counter / fps_elapsed
-            print(f"[Webcam] FPS: {fps:.1f}")
+        fps_elapsed = time.time() - fps_start_time
+        if fps_elapsed > 0:
+            current_fps = fps_counter / fps_elapsed
+        
+        # Reset FPS counter mỗi giây để có số liệu chính xác
+        if fps_elapsed >= 1.0:
+            print(f"[Webcam] FPS: {current_fps:.1f}")
             fps_start_time = time.time()
             fps_counter = 0
         
-        # Xử lý phím (10ms polling cho responsive hơn)
-        key = cv2.waitKey(10)
+        # Xử lý phím - Tối ưu: 16ms (60 FPS) thay vì 10ms để giảm tải CPU
+        key = cv2.waitKey(16)
         if key & 0xFF == ord('q'):
             print("[Webcam] Nhấn 'q' để thoát")
             with stop_lock:
@@ -621,7 +633,6 @@ def parse_args():
     p.add_argument('--no-voice', action='store_true', help='Tắt điều khiển giọng nói')
     p.add_argument('--no-webcam', action='store_true', help='Tắt điều khiển webcam')
     p.add_argument('--use-model', action='store_true', help='Sử dụng model AI cho voice control')
-    p.add_argument('--prefer-model', action='store_true', help='Ưu tiên model thay vì keyword cho voice')
     p.add_argument('--model-path', help='Path to .h5 model file cho voice')
     p.add_argument('--tokenizer-path', help='Path to tokenizer .pkl cho voice')
     p.add_argument('--label-encoder-path', help='Path to label_encoder .pkl cho voice')
@@ -659,7 +670,7 @@ if __name__ == '__main__':
     if not args.no_voice and VOICE_AVAILABLE:
         voice_thread = threading.Thread(
             target=voice_control_thread,
-            args=(args.use_model, args.prefer_model, args.model_path, 
+            args=(args.use_model, args.model_path, 
                   args.tokenizer_path, args.label_encoder_path),
             daemon=True
         )
