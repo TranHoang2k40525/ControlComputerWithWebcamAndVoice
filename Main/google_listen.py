@@ -4,7 +4,7 @@ import sys
 LANGUAGE_DEFAULT = "vi-VN"
 
 
-def create_recognizer(energy_threshold=300, dynamic_energy_threshold=True, pause_threshold=0.8):
+def create_recognizer(energy_threshold=500, dynamic_energy_threshold=True, pause_threshold=0.8):
     r = sr.Recognizer()
     r.energy_threshold = energy_threshold
     r.dynamic_energy_threshold = dynamic_energy_threshold

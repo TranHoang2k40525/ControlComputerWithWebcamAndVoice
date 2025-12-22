@@ -7,7 +7,7 @@ MP_HANDS_CONFIG = {
     'static_image_mode': False,
     'max_num_hands': 2,
     'min_detection_confidence': 0.5,
-    'min_tracking_confidence': 0.3  # Giảm từ 0.5 → 0.3 để tăng FPS
+    'min_tracking_confidence': 0.3  
 }
 
 mp_hands = mp.solutions.hands
@@ -18,7 +18,7 @@ hands = mp_hands.Hands(**MP_HANDS_CONFIG)
 _prev_smoothed = []        # danh sách theo tay: mỗi phần tử là 21 điểm (x_px, y_px, z)
 _prev_centers_px = []      # danh sách tâm tay trước đó (cx, cy) theo pixel
 _prev_age = []             # bộ đếm số frame bị mất (missed-frame) cho mỗi tay theo dõi
-_SMOOTH_ALPHA = 0.55       # Giảm từ 0.65 → 0.55 để giảm tải CPU (ít tính toán hơn)
+_SMOOTH_ALPHA = 0.55       # hệ số làm mượt EMA
 _MAX_MATCH_DIST_PX = 200   # khoảng cách pixel tối đa để ghép tay giữa các frame
 _MAX_MISSED_FRAMES = 6     # số frame tối đa trước khi quên một tay đã theo dõi
 
@@ -103,8 +103,8 @@ def extract_keypoints_from_frame(frame_rgb, multi_landmarks):
         bbox_width = max(x_max - x_min, 1)
         bbox_height = max(y_max - y_min, 1)
         center_x, center_y = (x_min + x_max) / 2, (y_min + y_max) / 2
-        center_x_norm = (center_x / w * 2) - 1
-        center_y_norm = (center_y / h * 2) - 1
+        center_x_norm = ((center_x / w) * 2) - 1
+        center_y_norm = ((center_y / h) * 2) - 1
         hand_centers.append((center_x_norm, center_y_norm))
         num_fingers = count_extended_fingers(hand_landmarks, h, w)
         hand_fingers.append(num_fingers)
@@ -197,6 +197,7 @@ def stabilize_results_landmarks(results, frame_shape, alpha=_SMOOTH_ALPHA, max_m
             smoothed = []
             for j, (mx, my, mz) in enumerate(meas['landmarks_px']):
                 px_prev, py_prev, pz_prev = prev_landmarks[j]
+                #Cong thuc EMA:
                 sx = alpha * mx + (1.0 - alpha) * px_prev
                 sy = alpha * my + (1.0 - alpha) * py_prev
                 sz = alpha * mz + (1.0 - alpha) * pz_prev
@@ -263,12 +264,12 @@ def draw_hand_landmarks(frame, results, hand_centers, hand_fingers, previous_cen
     # Tạo overlay nền mờ cho text dễ đọc
     overlay = frame.copy()
     cv2.rectangle(overlay, (5, 5), (350, 130), (0, 0, 0), -1)
-    cv2.addWeighted(overlay, 0.6, frame, 0.4, 0, frame)
+    cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
     
     # Hiển thị Buffer Frames (số frames đã nạp / 15 frames cần)
     # Màu xanh nếu đủ 15, vàng nếu 10-14, đỏ nếu < 10
-    buffer_color = (0, 255, 0) if buffer_frames >= 15 else (0, 255, 255) if buffer_frames >= 10 else (0, 0, 255)
-    cv2.putText(frame, f"Buffer: {buffer_frames}/15", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, buffer_color, 2)
+    buffer_color = (0, 255, 0) if buffer_frames >= 30 else (0, 255, 255) if buffer_frames >= 20 else (0, 0, 255)
+    cv2.putText(frame, f"Buffer: {buffer_frames}/30", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, buffer_color, 2)
     
     # Hiển thị Action hiện tại với màu sắc nổi bật
     action_display = mapped_action if mapped_action != "N/A" else "No Action"

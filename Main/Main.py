@@ -73,7 +73,7 @@ def get_cached_fonts():
 Model, label_encoder = load_gesture_model()
 
 # Bộ đệm và trạng thái cho webcam
-sequence_buffer = deque(maxlen=15)  # Giảm từ 30 → 15 frames để phản hồi nhanh hơn
+sequence_buffer = deque(maxlen=30)  # Giảm từ 30 → 15 frames để phản hồi nhanh hơn
 previous_centers = [(0, 0), (0, 0)]
 previous_mouse_pos = [None, None]
 last_discrete_time = 0
@@ -118,6 +118,7 @@ def create_voice_console_window(width=800, height=600, scroll_offset=0):
     draw.text((20, 15), "Hệ Thống Điều Khiển Giọng Nói", font=font_title, fill=(0, 0, 0))
     
     # Vẽ border
+    
     draw.rectangle([(0, 0), (width-1, height-1)], outline=(180, 180, 180), width=2)
     
     # Hiển thị messages
@@ -185,9 +186,6 @@ def create_voice_console_window(width=800, height=600, scroll_offset=0):
     
     return panel
 
-def voice_gui_thread():
-    """Thread này không còn được sử dụng - voice đã tích hợp vào webcam_gesture_thread."""
-    pass
 
 # ==================== VOICE CONTROL THREAD ====================
 WAKE_WORDS = ["ok google", "hey google", "xin chào google"]

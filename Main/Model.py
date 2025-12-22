@@ -8,7 +8,7 @@ import numpy as np
 from tensorflow.keras.models import load_model
 
 MODEL_PATH = '../gesture_lstm_model.h5'
-N_FRAMES = 15  # Giảm từ 30 → 15 để giảm delay từ 1s xuống 0.5s
+N_FRAMES = 30  # Giảm từ 30 → 15 để giảm delay từ 1s xuống 0.5s
 FEATURES = 84
 CONF_THRESHOLD = 0.7
 
@@ -19,7 +19,6 @@ LABEL_ENCODER = np.array([
 
 GESTURE_TYPES = {
     'dichuyenchuot': 'continuous', 
-    # Treat vertical swipes as continuous so scrolling can be chained while gesture persists
     'vuotlen': 'continuous',
     'vuotxuong': 'continuous',
     'vuotphai': 'discrete',
