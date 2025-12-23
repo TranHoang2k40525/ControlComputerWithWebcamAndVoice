@@ -1,4 +1,4 @@
-label,context
+﻿label,context
 clickchuotphai,Làm ơn chạm chuột phải
 clickchuotphai,Hãy giúp tôi click phải
 clickchuotphai,vui lòng kích chuột phải
@@ -999,3 +999,203 @@ vuotxuong,Tôi cần bạn lướt xuống dưới
 vuotxuong,Tôi yêu cầu bạn cho màn hình hạ xuống
 vuotxuong,Vui lòng vuốt mạnh xuống
 vuotxuong,Giúp tôi cuộn liên tục xuống ngay nhé
+nhapvanban,Gõ văn bản cho tôi
+nhapvanban,Bắt đầu nhập văn bản nào
+nhapvanban,Nhập văn bản nhé
+nhapvanban,Giúp tôi gõ chữ vào đây
+nhapvanban,Tôi muốn nhập một đoạn văn bản
+nhapvanban,Mở chế độ nhập văn bản đi
+nhapvanban,Cho tôi gõ nội dung
+nhapvanban,Nhập chữ giúp tôi với
+nhapvanban,Tôi cần nhập văn bản ngay bây giờ
+nhapvanban,Bắt đầu cho phép tôi gõ chữ
+nhapvanban,Nhập nội dung vào ô này
+nhapvanban,Tôi muốn soạn một đoạn văn
+nhapvanban,Cho phép nhập văn bản
+nhapvanban,Gõ giúp tôi mấy dòng chữ
+nhapvanban,Bắt đầu gõ nội dung
+nhapvanban,Tôi đang cần nhập text
+nhapvanban,Nhập chữ vào đây đi
+nhapvanban,Mở phần nhập văn bản cho tôi
+nhapvanban,Giờ tôi muốn gõ chữ
+nhapvanban,Cho tôi nhập nội dung nhé
+nhapvanban,Bật nhập văn bản
+nhapvanban,Tôi cần gõ vài chữ
+nhapvanban,Gõ văn bản hộ tôi
+nhapvanban,Cho phép tôi nhập chữ
+nhapvanban,Tôi muốn viết nội dung
+nhapvanban,Mở ô để nhập văn bản
+nhapvanban,Giúp tôi bắt đầu nhập chữ
+nhapvanban,Nhập nội dung giúp tôi
+nhapvanban,Tôi cần soạn thảo văn bản
+nhapvanban,Cho tôi gõ một đoạn text
+nhapvanban,Bắt đầu nhập chữ cho tôi
+nhapvanban,Tôi muốn nhập nội dung mới
+nhapvanban,Cho tôi viết vài dòng
+nhapvanban,Gõ chữ vào đây giúp tôi
+nhapvanban,Mở bàn phím để nhập văn bản
+nhapvanban,Tôi cần nhập một câu
+nhapvanban,Bắt đầu cho tôi gõ văn bản
+nhapvanban,Cho tôi nhập text
+nhapvanban,Tôi muốn viết gì đó
+nhapvanban,Mở chế độ gõ chữ
+nhapvanban,"Gõ văn bản cho tôi, nhé"
+nhapvanban,"Bắt đầu nhập văn bản nào, nhé"
+nhapvanban,"Nhập văn bản nhé, nhé"
+nhapvanban,"Giúp tôi gõ chữ vào đây, nhé"
+nhapvanban,"Tôi muốn nhập một đoạn văn bản, nhé"
+nhapvanban,"Mở chế độ nhập văn bản đi, nhé"
+nhapvanban,"Cho tôi gõ nội dung, nhé"
+nhapvanban,"Nhập chữ giúp tôi với, nhé"
+nhapvanban,"Tôi cần nhập văn bản ngay bây giờ, nhé"
+nhapvanban,"Bắt đầu cho phép tôi gõ chữ, nhé"
+nhapvanban,"Nhập nội dung vào ô này, nhé"
+nhapvanban,"Tôi muốn soạn một đoạn văn, nhé"
+nhapvanban,"Cho phép nhập văn bản, nhé"
+nhapvanban,"Gõ giúp tôi mấy dòng chữ, nhé"
+nhapvanban,"Bắt đầu gõ nội dung, nhé"
+nhapvanban,"Tôi đang cần nhập text, nhé"
+nhapvanban,"Nhập chữ vào đây đi, nhé"
+nhapvanban,"Mở phần nhập văn bản cho tôi, nhé"
+nhapvanban,"Giờ tôi muốn gõ chữ, nhé"
+nhapvanban,"Cho tôi nhập nội dung nhé, nhé"
+nhapvanban,"Bật nhập văn bản, nhé"
+nhapvanban,"Tôi cần gõ vài chữ, nhé"
+nhapvanban,"Gõ văn bản hộ tôi, nhé"
+nhapvanban,"Cho phép tôi nhập chữ, nhé"
+nhapvanban,"Tôi muốn viết nội dung, nhé"
+nhapvanban,"Mở ô để nhập văn bản, nhé"
+nhapvanban,"Giúp tôi bắt đầu nhập chữ, nhé"
+nhapvanban,"Nhập nội dung giúp tôi, nhé"
+nhapvanban,"Tôi cần soạn thảo văn bản, nhé"
+nhapvanban,"Cho tôi gõ một đoạn text, nhé"
+nhapvanban,"Bắt đầu nhập chữ cho tôi, nhé"
+nhapvanban,"Tôi muốn nhập nội dung mới, nhé"
+nhapvanban,"Cho tôi viết vài dòng, nhé"
+nhapvanban,"Gõ chữ vào đây giúp tôi, nhé"
+nhapvanban,"Mở bàn phím để nhập văn bản, nhé"
+nhapvanban,"Tôi cần nhập một câu, nhé"
+nhapvanban,"Bắt đầu cho tôi gõ văn bản, nhé"
+nhapvanban,"Cho tôi nhập text, nhé"
+nhapvanban,"Tôi muốn viết gì đó, nhé"
+nhapvanban,"Mở chế độ gõ chữ, nhé"
+nhapvanban,"Gõ văn bản cho tôi, đi"
+nhapvanban,"Bắt đầu nhập văn bản nào, đi"
+nhapvanban,"Nhập văn bản nhé, đi"
+nhapvanban,"Giúp tôi gõ chữ vào đây, đi"
+nhapvanban,"Tôi muốn nhập một đoạn văn bản, đi"
+nhapvanban,"Mở chế độ nhập văn bản đi, đi"
+nhapvanban,"Cho tôi gõ nội dung, đi"
+nhapvanban,"Nhập chữ giúp tôi với, đi"
+nhapvanban,"Tôi cần nhập văn bản ngay bây giờ, đi"
+nhapvanban,"Bắt đầu cho phép tôi gõ chữ, đi"
+nhapvanban,"Nhập nội dung vào ô này, đi"
+nhapvanban,"Tôi muốn soạn một đoạn văn, đi"
+nhapvanban,"Cho phép nhập văn bản, đi"
+nhapvanban,"Gõ giúp tôi mấy dòng chữ, đi"
+nhapvanban,"Bắt đầu gõ nội dung, đi"
+nhapvanban,"Tôi đang cần nhập text, đi"
+nhapvanban,"Nhập chữ vào đây đi, đi"
+nhapvanban,"Mở phần nhập văn bản cho tôi, đi"
+nhapvanban,"Giờ tôi muốn gõ chữ, đi"
+nhapvanban,"Cho tôi nhập nội dung nhé, đi"
+nhapvanban,"Bật nhập văn bản, đi"
+nhapvanban,"Tôi cần gõ vài chữ, đi"
+nhapvanban,"Gõ văn bản hộ tôi, đi"
+nhapvanban,"Cho phép tôi nhập chữ, đi"
+nhapvanban,"Tôi muốn viết nội dung, đi"
+nhapvanban,"Mở ô để nhập văn bản, đi"
+nhapvanban,"Giúp tôi bắt đầu nhập chữ, đi"
+nhapvanban,"Nhập nội dung giúp tôi, đi"
+nhapvanban,"Tôi cần soạn thảo văn bản, đi"
+nhapvanban,"Cho tôi gõ một đoạn text, đi"
+nhapvanban,"Bắt đầu nhập chữ cho tôi, đi"
+nhapvanban,"Tôi muốn nhập nội dung mới, đi"
+nhapvanban,"Cho tôi viết vài dòng, đi"
+nhapvanban,"Gõ chữ vào đây giúp tôi, đi"
+nhapvanban,"Mở bàn phím để nhập văn bản, đi"
+nhapvanban,"Tôi cần nhập một câu, đi"
+nhapvanban,"Bắt đầu cho tôi gõ văn bản, đi"
+nhapvanban,"Cho tôi nhập text, đi"
+nhapvanban,"Tôi muốn viết gì đó, đi"
+nhapvanban,"Mở chế độ gõ chữ, đi"
+nhapvanban,"Gõ văn bản cho tôi, giúp tôi"
+nhapvanban,"Bắt đầu nhập văn bản nào, giúp tôi"
+nhapvanban,"Nhập văn bản nhé, giúp tôi"
+nhapvanban,"Giúp tôi gõ chữ vào đây, giúp tôi"
+nhapvanban,"Tôi muốn nhập một đoạn văn bản, giúp tôi"
+nhapvanban,"Mở chế độ nhập văn bản đi, giúp tôi"
+nhapvanban,"Cho tôi gõ nội dung, giúp tôi"
+nhapvanban,"Nhập chữ giúp tôi với, giúp tôi"
+nhapvanban,"Tôi cần nhập văn bản ngay bây giờ, giúp tôi"
+nhapvanban,"Bắt đầu cho phép tôi gõ chữ, giúp tôi"
+nhapvanban,"Nhập nội dung vào ô này, giúp tôi"
+nhapvanban,"Tôi muốn soạn một đoạn văn, giúp tôi"
+nhapvanban,"Cho phép nhập văn bản, giúp tôi"
+nhapvanban,"Gõ giúp tôi mấy dòng chữ, giúp tôi"
+nhapvanban,"Bắt đầu gõ nội dung, giúp tôi"
+nhapvanban,"Tôi đang cần nhập text, giúp tôi"
+nhapvanban,"Nhập chữ vào đây đi, giúp tôi"
+nhapvanban,"Mở phần nhập văn bản cho tôi, giúp tôi"
+nhapvanban,"Giờ tôi muốn gõ chữ, giúp tôi"
+nhapvanban,"Cho tôi nhập nội dung nhé, giúp tôi"
+nhapvanban,"Bật nhập văn bản, giúp tôi"
+nhapvanban,"Tôi cần gõ vài chữ, giúp tôi"
+nhapvanban,"Gõ văn bản hộ tôi, giúp tôi"
+nhapvanban,"Cho phép tôi nhập chữ, giúp tôi"
+nhapvanban,"Tôi muốn viết nội dung, giúp tôi"
+nhapvanban,"Mở ô để nhập văn bản, giúp tôi"
+nhapvanban,"Giúp tôi bắt đầu nhập chữ, giúp tôi"
+nhapvanban,"Nhập nội dung giúp tôi, giúp tôi"
+nhapvanban,"Tôi cần soạn thảo văn bản, giúp tôi"
+nhapvanban,"Cho tôi gõ một đoạn text, giúp tôi"
+nhapvanban,"Bắt đầu nhập chữ cho tôi, giúp tôi"
+nhapvanban,"Tôi muốn nhập nội dung mới, giúp tôi"
+nhapvanban,"Cho tôi viết vài dòng, giúp tôi"
+nhapvanban,"Gõ chữ vào đây giúp tôi, giúp tôi"
+nhapvanban,"Mở bàn phím để nhập văn bản, giúp tôi"
+nhapvanban,"Tôi cần nhập một câu, giúp tôi"
+nhapvanban,"Bắt đầu cho tôi gõ văn bản, giúp tôi"
+nhapvanban,"Cho tôi nhập text, giúp tôi"
+nhapvanban,"Tôi muốn viết gì đó, giúp tôi"
+nhapvanban,"Mở chế độ gõ chữ, giúp tôi"
+nhapvanban,"Gõ văn bản cho tôi, một chút"
+nhapvanban,"Bắt đầu nhập văn bản nào, một chút"
+nhapvanban,"Nhập văn bản nhé, một chút"
+nhapvanban,"Giúp tôi gõ chữ vào đây, một chút"
+nhapvanban,"Tôi muốn nhập một đoạn văn bản, một chút"
+nhapvanban,"Mở chế độ nhập văn bản đi, một chút"
+nhapvanban,"Cho tôi gõ nội dung, một chút"
+nhapvanban,"Nhập chữ giúp tôi với, một chút"
+nhapvanban,"Tôi cần nhập văn bản ngay bây giờ, một chút"
+nhapvanban,"Bắt đầu cho phép tôi gõ chữ, một chút"
+nhapvanban,"Nhập nội dung vào ô này, một chút"
+nhapvanban,"Tôi muốn soạn một đoạn văn, một chút"
+nhapvanban,"Cho phép nhập văn bản, một chút"
+nhapvanban,"Gõ giúp tôi mấy dòng chữ, một chút"
+nhapvanban,"Bắt đầu gõ nội dung, một chút"
+nhapvanban,"Tôi đang cần nhập text, một chút"
+nhapvanban,"Nhập chữ vào đây đi, một chút"
+nhapvanban,"Mở phần nhập văn bản cho tôi, một chút"
+nhapvanban,"Giờ tôi muốn gõ chữ, một chút"
+nhapvanban,"Cho tôi nhập nội dung nhé, một chút"
+nhapvanban,"Bật nhập văn bản, một chút"
+nhapvanban,"Tôi cần gõ vài chữ, một chút"
+nhapvanban,"Gõ văn bản hộ tôi, một chút"
+nhapvanban,"Cho phép tôi nhập chữ, một chút"
+nhapvanban,"Tôi muốn viết nội dung, một chút"
+nhapvanban,"Mở ô để nhập văn bản, một chút"
+nhapvanban,"Giúp tôi bắt đầu nhập chữ, một chút"
+nhapvanban,"Nhập nội dung giúp tôi, một chút"
+nhapvanban,"Tôi cần soạn thảo văn bản, một chút"
+nhapvanban,"Cho tôi gõ một đoạn text, một chút"
+nhapvanban,"Bắt đầu nhập chữ cho tôi, một chút"
+nhapvanban,"Tôi muốn nhập nội dung mới, một chút"
+nhapvanban,"Cho tôi viết vài dòng, một chút"
+nhapvanban,"Gõ chữ vào đây giúp tôi, một chút"
+nhapvanban,"Mở bàn phím để nhập văn bản, một chút"
+nhapvanban,"Tôi cần nhập một câu, một chút"
+nhapvanban,"Bắt đầu cho tôi gõ văn bản, một chút"
+nhapvanban,"Cho tôi nhập text, một chút"
+nhapvanban,"Tôi muốn viết gì đó, một chút"
+nhapvanban,"Mở chế độ gõ chữ, một chút"

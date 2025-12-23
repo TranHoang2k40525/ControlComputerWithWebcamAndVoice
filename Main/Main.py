@@ -46,7 +46,43 @@ voice_log_messages = deque(maxlen=500)  # Lưu tối đa 500 dòng log (tăng t�
 voice_log_lock = threading.Lock()
 voice_scroll_offset = 0  # Vị trí scroll (0 = hiển thị messages mới nhất)
 
+# Click protection: tracking movement để yêu cầu tay DỪNG trước khi click
+_hand_movement_history = {}  # hand_idx -> deque of (x, y) positions
+_MOVEMENT_HISTORY_SIZE = 5   # Giữ 5 vị trí gần nhất
+_CLICK_MOVEMENT_THRESHOLD = 15.0  # pixels - nếu di chuyển > 15px trong 5 frames → KHÔNG click
+
 # REMOVED smart caching - render mỗi frame để real-time 100%
+
+def is_hand_stopped(hand_center, hand_idx, threshold=15.0):
+    """Kiểm tra bàn tay có DỪNG không (yêu cầu cho click để tránh nhầm với di chuột).
+    
+    Args:
+        hand_center: (x, y) tọa độ center của bàn tay hiện tại (pixels)
+        hand_idx: index của tay (0 = primary)
+        threshold: ngưỡng di chuyển (pixels) - nếu tổng di chuyển > threshold → KHÔNG dừng
+    
+    Returns:
+        True nếu tay đứng yên (cho phép click), False nếu tay đang di chuyển
+    """
+    if hand_idx not in _hand_movement_history:
+        _hand_movement_history[hand_idx] = deque(maxlen=_MOVEMENT_HISTORY_SIZE)
+    
+    history = _hand_movement_history[hand_idx]
+    history.append(hand_center)
+    
+    # Cần ít nhất 3 vị trí để tính movement
+    if len(history) < 3:
+        return False  # Chưa đủ dữ liệu → KHÔNG cho phép click (an toàn)
+    
+    # Tính tổng khoảng cách di chuyển trong history
+    total_movement = 0.0
+    for i in range(1, len(history)):
+        dx = history[i][0] - history[i-1][0]
+        dy = history[i][1] - history[i-1][1]
+        total_movement += (dx**2 + dy**2) ** 0.5
+    
+    # Nếu di chuyển < threshold → tay đứng yên
+    return total_movement < threshold
 
 # Cache fonts để tránh load lại liên tục (TỐI ƯU HIỆU NĂNG)
 _cached_fonts = None
@@ -425,6 +461,17 @@ def webcam_gesture_thread():
         current_time = time.time()
         # Hàm trả về tuple: (action_name, num_extended_fingers)
         aligned_action, aligned_fingers = detect_aligned_fingers(results, frame.shape)
+
+        # ===== CLICK PROTECTION: Yêu cầu tay DỪNG trước khi click =====
+        # Tránh nhầm lẫn giữa click và di chuyển chuột
+        if aligned_action in ['clickchuottrai', 'clickchuotphai']:
+            if len(hand_centers) > 0:
+                primary_hand_center = hand_centers[0]  # Tay chính
+                if not is_hand_stopped(primary_hand_center, hand_idx=0, threshold=15.0):
+                    # Tay ĐANG di chuyển → HỦY click action
+                    aligned_action = None
+                    # Debug log (không spam - chỉ khi phát hiện)
+                    print(f"[CLICK BLOCKED] Hand is moving - total movement > 15px")
 
         # Nếu người dùng giơ 4 ngón trở lên trên tay chính, ưu tiên hành động do model dự đoán
         # và KHÔNG áp dụng ghi đè click bằng ngón thẳng hàng. Dừng actuator tạm thời để an toàn.

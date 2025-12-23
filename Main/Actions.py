@@ -35,10 +35,10 @@ DISCRETE_COOLDOWN = 1.0
 CONTINUOUS_SCROLL_STEP = 30  # số lượng scroll (px) mỗi lần gọi liên tiếp
 CONTINUOUS_SCROLL_MAX_STEP = 900  # giới hạn tối đa số scroll trong 1 lần tính
 # Cấu hình cho di chuyển chuột mượt mà
-MOUSE_DEAD_ZONE = 0.03  # Tăng từ 0.015 → 0.03 để CHỐNG RUNG tốt hơn (3% màn hình)
+MOUSE_DEAD_ZONE = 0.06  # giam rung mam hinh( 6% màn hình)
 MOUSE_SPEED_MULTIPLIER = 6  # Giữ ở 6 để cân bằng giữa tốc độ và chống rung
-MOUSE_MAX_MOVE = 100  # Tăng từ 100 → 200 pixels để cho phép nhảy xa hơn
-MOUSE_MAX_SPEED_PX_PER_SEC = 600.0  # 1200 px/s cho tốc độ cao
+MOUSE_MAX_MOVE = 100  # px mỗi frame (giới hạn tốc độ di chuyển)
+MOUSE_MAX_SPEED_PX_PER_SEC = 600.0  # px/giây
 ACTUATION_HZ = 60  #  60 Hz để cập nhật nhanh hơn
 pyautogui.FAILSAFE = True
 pyautogui.PAUSE = 0.0
@@ -61,7 +61,7 @@ def execute_stop_program():
     return True  # Dừng chương trình
 
 # Cấu hình ứng dụng và website
-APP_DATABASE = {
+APP_DATABASE = {+++
     # Browsers
     'chrome': {
         'display_name': 'Google Chrome',
@@ -172,11 +172,11 @@ def execute_open_app(app_name=None):
         False: Không dừng chương trình
     """
     global _last_open_app_time
-    print(f"[DEBUG] execute_open_app() được gọi với app_name='{app_name}'", flush=True)
+    print(f"execute_open_app() được gọi với app_name='{app_name}'", flush=True)
     
     # Nếu không có tên app, báo hiệu cần input thêm
     if app_name is None:
-        print("[DEBUG] app_name=None, return False", flush=True)
+        print("app_name=None, return False", flush=True)
         return False
     
     # Tìm app theo từ khóa
@@ -187,7 +187,7 @@ def execute_open_app(app_name=None):
         current_time = time.perf_counter()
         last_time = _last_open_app_time.get(found_app, 0)
         if current_time - last_time < _OPEN_APP_COOLDOWN:
-            print(f"[DEBUG] COOLDOWN ACTIVE - Bỏ qua mở {found_app} (chỉ {current_time - last_time:.2f}s từ lần trước)", flush=True)
+            print(f"COOLDOWN ACTIVE - Bỏ qua mở {found_app} (chỉ {current_time - last_time:.2f}s từ lần trước)", flush=True)
             log_action(f"! Bỏ qua: {found_app} vừa mở rồi (cooldown {_OPEN_APP_COOLDOWN}s)", show_in_gui=False)
             return False
         _last_open_app_time[found_app] = current_time
@@ -199,7 +199,7 @@ def execute_open_app(app_name=None):
     display_name = config.get('display_name', found_app_recheck.title()) if found_app_recheck else app_name
     
     if not found_app_recheck:
-        log_action(f"✗ Không tìm thấy '{app_name}' trong danh sách ứng dụng")
+        log_action(f"Không tìm thấy '{app_name}' trong danh sách ứng dụng")
         return False
     
     try:
@@ -208,10 +208,10 @@ def execute_open_app(app_name=None):
             url = config['url']
             # Log TRƯỚC khi thực thi
             log_action(f">> Đang mở website: {display_name}...")
-            print(f"[DEBUG] Gọi subprocess.Popen cho URL: {url}", flush=True)
+            print(f"Gọi subprocess.Popen cho URL: {url}", flush=True)
             subprocess.Popen(['cmd', '/c', 'start', url], shell=True)
-            print(f"[DEBUG] subprocess.Popen URL HOÀN TẤT", flush=True)
-            log_action(f"✓ Đã mở website: {display_name}")
+            print(f"subprocess.Popen URL HOÀN TẤT", flush=True)
+            log_action(f"Đã mở website: {display_name}")
             return False
         
         # Application: tìm đường dẫn tồn tại
@@ -233,46 +233,46 @@ def execute_open_app(app_name=None):
             
             # Kiểm tra nếu là file .lnk (shortcut), dùng start để mở
             if app_path.lower().endswith('.lnk'):
-                print(f"[DEBUG] Gọi subprocess.Popen cho .lnk: {app_path}", flush=True)
+                print(f"Gọi subprocess.Popen cho .lnk: {app_path}", flush=True)
                 subprocess.Popen(['cmd', '/c', 'start', '', app_path], shell=True)
-                print(f"[DEBUG] subprocess.Popen .lnk HOÀN TẤT", flush=True)
+                print(f"subprocess.Popen .lnk HOÀN TẤT", flush=True)
             else:
                 # File .exe thông thường
-                print(f"[DEBUG] Gọi subprocess.Popen cho .exe: {app_path}", flush=True)
+                print(f"Gọi subprocess.Popen cho .exe: {app_path}", flush=True)
                 subprocess.Popen([app_path], shell=False)
-                print(f"[DEBUG] subprocess.Popen .exe HOÀN TẤT", flush=True)
+                print(f"subprocess.Popen .exe HOÀN TẤT", flush=True)
             
-            log_action(f"✓ Đã mở ứng dụng: {display_name}")
+            log_action(f"Đã mở ứng dụng: {display_name}")
         else:
-            log_action(f"✗ Không tìm thấy đường dẫn cài đặt: {display_name}", show_in_gui=False)
+            log_action(f"Không tìm thấy đường dẫn cài đặt: {display_name}", show_in_gui=False)
             print(f"  Đã thử: {paths}")
     
     except Exception as e:
-        log_action(f"✗ Lỗi khi mở {display_name}: {e}", show_in_gui=False)
+        log_action(f"Lỗi khi mở {display_name}: {e}", show_in_gui=False)
         print(f"Chi tiết lỗi: {e}")
     
     return False  # Không dừng chương trình
 
 def execute_zoom_in():
     pyautogui.hotkey('ctrl', '+')
-    log_action("✓ Thực thi: Phóng to (Ctrl +)")
+    log_action("Thực thi: Phóng to (Ctrl +)")
     return False
 
 def execute_zoom_out():
     pyautogui.hotkey('ctrl', '-')
-    log_action("✓ Thực thi: Thu nhỏ (Ctrl -)")
+    log_action(" Thực thi: Thu nhỏ (Ctrl -)")
     return False
 
 def execute_tab_next():
     """Chuyển tab tiếp theo (Ctrl+Tab)."""
     pyautogui.hotkey('ctrl', 'tab')
-    log_action("✓ Thực thi: Chuyển tab tiếp (Ctrl+Tab)")
+    log_action("Thực thi: Chuyển tab tiếp (Ctrl+Tab)")
     return False
 
 def execute_tab_prev():
     """Chuyển tab trước đó (Ctrl+Shift+Tab)."""
     pyautogui.hotkey('ctrl', 'shift', 'tab')
-    log_action("✓ Thực thi: Chuyển tab trước (Ctrl+Shift+Tab)")
+    log_action("Thực thi: Chuyển tab trước (Ctrl+Shift+Tab)")
     return False
 
 def execute_type_text(text_content=None):
@@ -287,7 +287,7 @@ def execute_type_text(text_content=None):
         return False
     
     if not text_content:
-        log_action("✗ Nhập văn bản thất bại - Không có nội dung", show_in_gui=False)
+        log_action("Nhập văn bản thất bại - Không có nội dung", show_in_gui=False)
         return False
     
     # Format: Viết hoa chữ cái đầu tiên
@@ -297,13 +297,13 @@ def execute_type_text(text_content=None):
         pyperclip.copy(formatted_text)
         # Không dùng sleep - để paste ngay lập tức
         pyautogui.hotkey('ctrl', 'v')
-        log_action(f"✓ Đã nhập văn bản: '{formatted_text}'")
+        log_action(f"Đã nhập văn bản: '{formatted_text}'")
     except ImportError:
         # Fallback: dùng pyautogui.write nếu không có pyperclip
         pyautogui.write(formatted_text)
-        log_action(f"✓ Đã nhập văn bản (fallback): '{formatted_text}'")
+        log_action(f"Đã nhập văn bản (fallback): '{formatted_text}'")
     except Exception as e:
-        log_action(f"✗ Lỗi nhập văn bản: {e}", show_in_gui=False)
+        log_action(f"Lỗi nhập văn bản: {e}", show_in_gui=False)
         print(f"Chi tiết lỗi: {e}")
     
     return False
@@ -368,6 +368,10 @@ _last_call_time = {}   # hand_idx -> perf_counter của lần gọi trước
 _last_move_time = {}   # hand_idx -> perf_counter của lần di chuyển chuột trước
 # Thời gian gọi scroll gần nhất (dùng để scale step cho scroll liên tục)
 _last_scroll_time = {'up': 0.0, 'down': 0.0}
+
+# Đếm số frame liên tiếp không di chuyển (để clear target khi dừng)
+_no_move_counter = {}  # hand_idx -> số frame liên tiếp should_move=False
+NO_MOVE_THRESHOLD = 3  # Sau 3 frames dừng → clear target
 
 # Actuator: vòng lặp riêng để di chuột mượt ngay cả khi fps thấp
 _actuator_targets = {}  # hand_idx -> (x, y) mục tiêu (float)
@@ -612,6 +616,9 @@ def execute_mouse_to_point(screen_x, screen_y, previous_mouse_pos, hand_idx, smo
 
         # Bỏ qua các di chuyển rất nhỏ để tránh drift chuột
         if should_move and distance > max(0.5, MIN_MOVE_PIXELS):
+            # Reset counter vì đang di chuyển
+            _no_move_counter[hand_idx] = 0
+            
             # Áp dụng hệ số tốc độ
             move_x = delta_x * MOUSE_SPEED_MULTIPLIER
             move_y = delta_y * MOUSE_SPEED_MULTIPLIER
@@ -650,14 +657,26 @@ def execute_mouse_to_point(screen_x, screen_y, previous_mouse_pos, hand_idx, smo
             if not is_jittering:
                 ts = datetime.datetime.fromtimestamp(call_wall).strftime('%H:%M:%S.%f')
                 print(f"[{ts}] [MOVE] queued_target=({smooth_x},{smooth_y})")
-        # else: Không log DEAD ZONE để giảm tải I/O
+        else:
+            # KHÔNG DI CHUYỂN - Tăng counter
+            _no_move_counter[hand_idx] = _no_move_counter.get(hand_idx, 0) + 1
+            
+            # Nếu dừng quá lâu (3+ frames) → Clear target để actuator dừng ngay
+            if _no_move_counter[hand_idx] >= NO_MOVE_THRESHOLD:
+                with _actuator_lock:
+                    if hand_idx in _actuator_targets:
+                        del _actuator_targets[hand_idx]
+                        # Log khi clear target
+                        ts = datetime.datetime.fromtimestamp(call_wall).strftime('%H:%M:%S.%f')
+                        print(f"[{ts}] [STOP] Cleared target - Hand stopped for {_no_move_counter[hand_idx]} frames")
     else:
         # Lần đầu tiên - chỉ lưu vị trí, không di chuyển  
         ts = datetime.datetime.fromtimestamp(call_wall).strftime('%H:%M:%S.%f')
         proc_time = time.perf_counter() - call_perf
         print(f"[{ts}] [INIT] dt_call={dt_since_last_call:.3f}s proc={proc_time:.4f}s Mouse tracking initialized at finger pos ({int(screen_x)}, {int(screen_y)})")
-        # Reset lịch sử
+        # Reset lịch sử và counter
         _movement_history[hand_idx] = []
+        _no_move_counter[hand_idx] = 0
     
     # Lưu vị trí ngón tay hiện tại (dùng measurement đã làm mượt)
     previous_mouse_pos[hand_idx] = (meas_x, meas_y)
@@ -689,19 +708,19 @@ def execute_action(execute_func, pred_label, current_time, is_continuous: bool =
     """
     global last_execution_times
     
-    print(f"[DEBUG] execute_action() được gọi: pred_label='{pred_label}', is_continuous={is_continuous}", flush=True)
+    print(f"execute_action() được gọi: pred_label='{pred_label}', is_continuous={is_continuous}", flush=True)
 
     if not is_continuous:
         if pred_label in last_execution_times:
             time_since_last = current_time - last_execution_times[pred_label]
             if time_since_last < DISCRETE_COOLDOWN:
-                print(f"[DEBUG] Cooldown active - Bỏ qua (time_since_last={time_since_last:.3f}s)", flush=True)
+                print(f"Cooldown active - Bỏ qua (time_since_last={time_since_last:.3f}s)", flush=True)
                 return False
 
     # Execute action
-    print(f"[DEBUG] Đang gọi execute_func() cho '{pred_label}'...", flush=True)
+    print(f"Đang gọi execute_func() cho '{pred_label}'...", flush=True)
     should_stop = execute_func()
-    print(f"[DEBUG] execute_func() HOÀN TẤT cho '{pred_label}'", flush=True)
+    print(f"execute_func() HOÀN TẤT cho '{pred_label}'", flush=True)
 
     # Cập nhật thời gian execute cuối
     last_execution_times[pred_label] = current_time
